@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>えいごバトル！</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070e;--gold:#ffd700;--correct:#00ff88;--wrong:#ff3333;
+  --purple:#cc44ff;--cyan:#00ddff;--boss:#ff2266;--eng:#44ffaa;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%;overflow:hidden;}
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle 2s infinite alternate;}
+@keyframes twinkle{from{opacity:.1}to{opacity:.8}}
+.bg-ground{position:fixed;bottom:0;left:0;right:0;height:50px;
+  background:linear-gradient(180deg,#0a1420,#060e18);border-top:2px solid #1a5538;z-index:1;pointer-events:none;}
+#app{position:fixed;inset:0;z-index:10;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;display:flex;flex-direction:column;align-items:center;}
+
+/* ========== タイトル ========== */
+#screen-title{min-height:100svh;width:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px 18px 44px;}
+.title-logo{font-family:'Boogaloo',cursive;font-size:clamp(36px,11vw,60px);
+  background:linear-gradient(135deg,#44ffaa,#00ddff,#aa44ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(68,255,170,.7));animation:logoPulse 2s ease-in-out infinite;line-height:1.1;}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(68,255,170,.55))}
+  50%{filter:drop-shadow(0 0 30px rgba(0,220,255,.95))}}
+.title-fighters{font-size:54px;animation:bounce 1s ease-in-out infinite alternate;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.title-sub{color:#aaddcc;font-size:12px;font-weight:700;line-height:1.9;}
+.save-info{background:rgba(68,255,170,.07);border:1px solid rgba(68,255,170,.2);
+  border-radius:11px;padding:9px 15px;color:var(--eng);font-size:12px;font-weight:700;line-height:1.6;}
+.save-clear{font-size:10px;color:rgba(255,100,100,.5);cursor:pointer;text-decoration:underline;}
+.back-btn{font-size:11px;color:rgba(255,255,255,.3);font-weight:700;cursor:pointer;text-decoration:underline;}
+
+/* ========== キャラ選択 ========== */
+#screen-select{min-height:100svh;width:100%;max-width:430px;display:flex;flex-direction:column;
+  align-items:center;padding:22px 12px 50px;gap:10px;}
+.select-title{color:var(--gold);font-size:18px;font-weight:900;}
+.char-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%;}
+.char-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);
+  border-radius:9px;padding:5px 3px;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:2px;}
+.char-card.selected{border-color:var(--gold);background:rgba(255,215,0,.1);
+  box-shadow:0 0 13px rgba(255,215,0,.4);transform:scale(1.05);}
+.char-emoji{font-size:30px;}.char-name{color:#fff;font-size:9px;font-weight:700;}
+.char-skill-label{font-size:8px;color:var(--purple);font-weight:700;}
+.char-preview{width:100%;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.16);
+  border-radius:10px;padding:9px 12px;display:none;text-align:center;}
+.char-preview.show{display:block;}
+.preview-name{font-size:15px;font-weight:900;color:var(--gold);}
+.preview-stats{font-size:11px;color:rgba(255,255,255,.6);margin-top:3px;}
+.enemy-route{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:9px 10px;}
+.route-title{font-size:10px;color:rgba(255,255,255,.35);font-weight:700;margin-bottom:7px;letter-spacing:1px;}
+.route-steps{display:flex;align-items:center;gap:4px;overflow-x:auto;padding-bottom:2px;}
+.route-step{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;}
+.route-enemy{font-size:22px;filter:grayscale(1);opacity:.35;transition:all .3s;}
+.route-enemy.done{filter:grayscale(1);opacity:.2;}
+.route-enemy.active{filter:grayscale(0);opacity:1;animation:routeActive .7s ease-in-out infinite alternate;}
+.route-enemy.boss{font-size:26px;}
+@keyframes routeActive{from{transform:scale(1)}to{transform:scale(1.18)}}
+.route-name{font-size:8px;color:rgba(255,255,255,.4);font-weight:700;}
+.route-name.active{color:var(--gold);}
+.route-arrow{font-size:10px;color:rgba(255,255,255,.2);flex-shrink:0;}
+
+/* ========== ゲーム ========== */
+#screen-game{width:100%;max-width:430px;display:flex;flex-direction:column;
+  align-items:center;padding:7px 11px 28px;gap:5px;}
+.status-row{display:flex;gap:5px;align-items:flex-start;width:100%;}
+.status-block{flex:1;display:flex;flex-direction:column;gap:2px;}
+.status-block.right{align-items:flex-end;}
+.fighter-label{font-size:10px;font-weight:900;color:#fff;display:flex;align-items:center;gap:3px;}
+.lv-badge{font-size:8px;font-weight:900;padding:1px 4px;border-radius:6px;
+  background:rgba(255,215,0,.14);border:1px solid rgba(255,215,0,.35);color:var(--gold);}
+.boss-badge{background:rgba(255,34,102,.18);border-color:rgba(255,34,102,.5);color:var(--boss);
+  animation:bossBP .6s ease-in-out infinite alternate;}
+@keyframes bossBP{from{box-shadow:none}to{box-shadow:0 0 8px rgba(255,34,102,.6)}}
+.hp-track{width:100%;height:11px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+.hp-fill{height:100%;border-radius:6px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.hp-fill.p1{background:linear-gradient(90deg,#ff2200,#ff8844);}
+.hp-fill.p2{background:linear-gradient(270deg,#006622,#44ffaa);}
+.hp-fill.p2.boss{background:linear-gradient(270deg,#cc0044,#ff2266,#ff8800);}
+.hp-text{font-size:8px;color:rgba(255,255,255,.45);font-weight:700;}
+.exp-track{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.exp-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#00aa66,#44ffaa);transition:width .35s;}
+.exp-text{font-size:8px;color:rgba(68,255,170,.65);font-weight:700;}
+.vs-badge{font-size:13px;font-weight:900;color:var(--gold);font-family:'Boogaloo',cursive;flex-shrink:0;}
+.skill-row{width:100%;display:flex;align-items:center;gap:5px;}
+.skill-track{flex:1;height:5px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.skill-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#00ffaa,#44aaff);transition:width .3s;}
+.skill-label{font-size:8px;color:var(--eng);font-weight:700;flex-shrink:0;}
+.skill-ready-badge{font-size:9px;color:var(--eng);font-weight:900;
+  animation:sklBlink .6s ease-in-out infinite alternate;}
+@keyframes sklBlink{from{opacity:.5}to{opacity:1}}
+.weakness-bar{width:100%;display:flex;align-items:center;gap:5px;}
+.weakness-label{font-size:8px;color:rgba(100,255,180,.6);font-weight:700;flex-shrink:0;}
+.weakness-dots{display:flex;gap:3px;}
+.wdot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.13);}
+.wdot.ok{background:#00ff88;}.wdot.wrong{background:#ff5533;}
+.combo-zone{width:100%;text-align:center;height:18px;flex-shrink:0;}
+.combo-txt{font-size:15px;font-weight:900;font-family:'Boogaloo',cursive;color:var(--gold);
+  display:none;animation:comboPop .28s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes comboPop{from{transform:scale(.3)}to{transform:scale(1)}}
+
+/* バトルステージ */
+.battle-stage{position:relative;width:100%;height:90px;
+  background:linear-gradient(180deg,rgba(2,10,6,.9),rgba(4,14,10,.95));
+  border-radius:11px;border:1px solid rgba(30,80,50,.35);
+  overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 12px 5px;flex-shrink:0;}
+.battle-stage.boss-stage{border-color:rgba(255,34,102,.4);
+  background:linear-gradient(180deg,rgba(20,0,10,.95),rgba(40,0,20,.98));}
+.stage-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.01) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.01) 1px,transparent 1px);
+  background-size:16px 16px;pointer-events:none;}
+.stage-floor{position:absolute;bottom:0;left:0;right:0;height:15px;
+  border-top:1.5px solid rgba(30,100,60,.3);}
+.boss-bg{position:absolute;inset:0;
+  background:radial-gradient(ellipse at 70% 50%,rgba(255,0,60,.12),transparent 65%);
+  pointer-events:none;display:none;}
+.boss-bg.show{display:block;}
+.fighter{font-size:42px;position:relative;z-index:2;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6));}
+.fighter.p1{animation:idleL 2.2s ease-in-out infinite;}
+.fighter.p2{animation:idleR 2.2s ease-in-out infinite;transform:scaleX(-1);}
+.fighter.p2.boss-char{font-size:54px;}
+@keyframes idleL{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes idleR{0%,100%{transform:translateY(0) scaleX(-1)}50%{transform:translateY(-4px) scaleX(-1)}}
+.fighter.atk-r{animation:atkR .3s ease-out forwards!important;}
+.fighter.atk-l{animation:atkL .3s ease-out forwards!important;}
+@keyframes atkR{0%{transform:translateX(0)}45%{transform:translateX(46px) translateY(-13px) scale(1.3)}100%{transform:translateX(0)}}
+@keyframes atkL{0%{transform:translateX(0) scaleX(-1)}45%{transform:translateX(-46px) translateY(-13px) scaleX(-1) scale(1.3)}100%{transform:translateX(0) scaleX(-1)}}
+.fighter.dmg-r{animation:dmgR .42s ease-out!important;}
+.fighter.dmg-l{animation:dmgL .42s ease-out!important;}
+@keyframes dmgR{0%{transform:translateX(0)}25%{transform:translateX(24px) rotate(20deg) scale(1.2)}100%{transform:translateX(0)}}
+@keyframes dmgL{0%{transform:translateX(0) scaleX(-1)}25%{transform:translateX(-24px) rotate(-20deg) scaleX(-1) scale(1.2)}100%{transform:translateX(0) scaleX(-1)}}
+.hit-fx{position:absolute;z-index:20;pointer-events:none;animation:hitFx .48s ease-out forwards;}
+@keyframes hitFx{0%{opacity:1;transform:scale(.5)}40%{opacity:1;transform:scale(1.5)}100%{opacity:0;transform:scale(1.9)}}
+.special-fx{position:absolute;inset:0;z-index:15;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:900;font-family:'Boogaloo',cursive;
+  animation:specialFx .6s ease-out forwards;}
+@keyframes specialFx{0%{opacity:0;transform:scale(.3)}30%{opacity:1;transform:scale(1.2)}70%{opacity:1}100%{opacity:0;transform:scale(1.5)}}
+.dmg-num{position:absolute;z-index:25;pointer-events:none;
+  font-family:'Boogaloo',cursive;font-weight:900;
+  animation:dmgNum .9s ease-out forwards;text-shadow:0 2px 4px rgba(0,0,0,.9);}
+@keyframes dmgNum{0%{opacity:1;transform:translateY(0) scale(1)}
+  20%{transform:translateY(-9px) scale(1.3)}100%{opacity:0;transform:translateY(-52px) scale(.7)}}
+@keyframes stageShake{0%,100%{transform:translate(0)}15%{transform:translate(-6px,2px)}
+  30%{transform:translate(6px,-2px)}45%{transform:translate(-4px,3px)}60%{transform:translate(4px,-3px)}
+  75%{transform:translate(-2px,2px)}90%{transform:translate(2px,-2px)}}
+.stage-shake{animation:stageShake .36s ease-out!important;}
+.round-row{display:flex;justify-content:space-between;align-items:center;width:100%;}
+.round-badge{background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.22);
+  color:var(--gold);font-size:10px;font-weight:900;padding:2px 8px;border-radius:11px;}
+.round-badge.boss{background:rgba(255,34,102,.12);border-color:rgba(255,34,102,.35);color:var(--boss);}
+.score-row{display:flex;gap:5px;font-size:11px;font-weight:900;}
+.sc1{color:#ff9966;}.sc2{color:#44ffaa;}
+.streak-badge{font-size:9px;color:#ffaa44;font-weight:900;
+  background:rgba(255,150,0,.1);border:1px solid rgba(255,150,0,.2);
+  padding:2px 6px;border-radius:9px;display:none;}
+.streak-badge.show{display:inline;}
+.event-notice{width:100%;text-align:center;padding:5px 9px;border-radius:9px;
+  font-size:11px;font-weight:900;display:none;
+  animation:eventPop .35s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes eventPop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.event-notice.show{display:block;}
+.event-notice.bonus{background:rgba(255,215,0,.09);border:1px solid rgba(255,215,0,.25);color:var(--gold);}
+.event-notice.danger{background:rgba(255,50,50,.09);border:1px solid rgba(255,50,50,.22);color:#ff8888;}
+.event-notice.heal{background:rgba(0,255,100,.08);border:1px solid rgba(0,255,100,.2);color:var(--correct);}
+
+/* ========== 問題カード ========== */
+.q-card{width:100%;background:linear-gradient(135deg,rgba(20,60,35,.2),rgba(10,30,20,.1));
+  border:2px solid rgba(50,160,90,.2);border-radius:13px;
+  padding:9px 12px 10px;text-align:center;position:relative;flex-shrink:0;}
+.q-timer{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.q-timer-fill{height:100%;border-radius:2px;transition:width .1s linear;}
+.q-type-badge{display:inline-block;font-size:9px;font-weight:900;padding:2px 8px;border-radius:9px;margin-bottom:5px;}
+.q-type-badge.eng-to-jp{background:rgba(68,255,170,.12);border:1px solid rgba(68,255,170,.3);color:var(--eng);}
+.q-type-badge.jp-to-eng{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.28);color:var(--gold);}
+
+/* 英単語大表示 */
+.word-display{font-family:'Boogaloo',cursive;font-size:clamp(36px,12vw,58px);font-weight:900;
+  color:#fff;line-height:1;text-shadow:0 0 18px rgba(68,255,170,.45),0 2px 8px rgba(0,0,0,.8);
+  margin:4px 0;letter-spacing:2px;}
+.word-hint{font-size:11px;color:rgba(255,255,255,.45);font-weight:700;margin-top:2px;}
+/* 幼稚園向け：絵文字ヒント大表示 */
+.emoji-hint{font-size:56px;line-height:1.1;margin:4px 0;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
+  animation:emojiPop .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes emojiPop{from{transform:scale(0)}to{transform:scale(1)}}
+.emoji-hint.hidden{display:none;}
+
+/* 日本語→英語の問題文 */
+.jp-lead{font-size:20px;font-weight:900;color:#fff;margin:4px 0;
+  text-shadow:0 0 12px rgba(255,255,255,.2);}
+.jp-hint{font-size:11px;color:rgba(255,255,255,.4);font-weight:700;margin-top:2px;}
+
+/* 4択 */
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%;margin-top:6px;}
+.choice-btn{background:linear-gradient(145deg,rgba(10,35,20,.95),rgba(6,20,12,.98));
+  border:2px solid rgba(50,160,90,.22);color:#fff;
+  font-size:16px;font-weight:900;padding:10px 6px;border-radius:14px;cursor:pointer;
+  font-family:'Noto Sans JP',sans-serif;transition:transform .07s,border-color .12s;
+  -webkit-user-select:none;user-select:none;line-height:1.4;min-height:56px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px;}
+.choice-btn.eng{font-family:'Boogaloo',cursive;font-size:18px;letter-spacing:1px;}
+.choice-emoji{font-size:22px;line-height:1;}
+.choice-btn:active{transform:scale(.91);}
+.choice-btn.correct{border-color:var(--correct);background:rgba(0,255,136,.12);
+  box-shadow:0 0 14px rgba(0,255,136,.4);}
+.choice-btn.wrong{border-color:var(--wrong);background:rgba(255,51,51,.1);}
+.choice-btn.disabled{opacity:.45;pointer-events:none;}
+.time-bonus{font-size:10px;color:var(--gold);font-weight:700;height:12px;text-align:center;margin-top:2px;}
+
+/* ========== 解説ボックス ========== */
+.explain-box{width:100%;
+  background:linear-gradient(135deg,rgba(0,100,50,.12),rgba(0,60,40,.07));
+  border:2px solid rgba(0,200,120,.28);border-radius:13px;
+  padding:11px 12px;display:none;
+  animation:explainIn .32s cubic-bezier(.34,1.1,.64,1);}
+@keyframes explainIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.explain-box.show{display:block;}
+.explain-title{font-size:11px;color:var(--correct);font-weight:900;margin-bottom:6px;}
+.explain-word-card{background:rgba(255,255,255,.05);border:1px solid rgba(68,255,170,.18);
+  border-radius:10px;padding:9px 12px;margin-bottom:7px;}
+.explain-eng{font-family:'Boogaloo',cursive;font-size:32px;font-weight:900;color:#fff;
+  text-shadow:0 0 12px rgba(68,255,170,.5);letter-spacing:2px;}
+.explain-jp{font-size:18px;font-weight:900;color:var(--eng);margin-top:2px;}
+.explain-cat{font-size:10px;color:rgba(255,255,255,.4);font-weight:700;margin-top:2px;}
+.explain-reibun{font-size:11px;color:rgba(200,255,230,.75);font-weight:700;margin-top:6px;
+  border-left:2px solid rgba(68,255,170,.35);padding-left:7px;line-height:1.7;}
+.explain-tip{font-size:11px;color:#aaffee;font-weight:700;margin-top:6px;
+  padding:5px 8px;background:rgba(0,255,180,.05);border-radius:7px;
+  border-left:2px solid var(--correct);line-height:1.6;}
+.explain-next-btn{
+  display:block;width:100%;margin-top:11px;
+  background:linear-gradient(135deg,#ffd700,#ff8800);
+  color:#180000;font-size:16px;font-weight:900;
+  border:none;border-radius:12px;padding:13px 0;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  box-shadow:0 0 16px rgba(255,180,0,.42);
+  animation:nextBtnPulse 1.4s ease-in-out infinite;
+  -webkit-user-select:none;user-select:none;letter-spacing:1px;}
+.explain-next-btn:active{transform:scale(.93);}
+@keyframes nextBtnPulse{0%,100%{box-shadow:0 0 10px rgba(255,180,0,.35)}
+  50%{box-shadow:0 0 26px rgba(255,220,0,.85)}}
+
+/* フィードバック */
+.fb-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:150;}
+.fb-txt{font-size:52px;font-family:'Boogaloo',cursive;font-weight:900;opacity:0;
+  text-shadow:0 0 24px currentColor;}
+.fb-txt.show{opacity:1;animation:fbA .82s ease-out forwards;}
+@keyframes fbA{0%{opacity:1;transform:scale(.3) rotate(-10deg)}
+  25%{transform:scale(1.3) rotate(4deg)}70%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1.4)}}
+.lvup-notify{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;
+  flex-direction:column;align-items:center;gap:6px;
+  background:rgba(6,6,20,.94);border:2px solid var(--gold);border-radius:16px;
+  padding:14px 22px;box-shadow:0 0 35px rgba(255,215,0,.5);pointer-events:none;
+  min-width:205px;text-align:center;}
+.lvup-notify.show{display:flex;animation:lvupAnim .38s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes lvupAnim{from{transform:translate(-50%,-50%) scale(.28)}to{transform:translate(-50%,-50%) scale(1)}}
+.lvup-title{font-size:21px;font-family:'Boogaloo',cursive;color:var(--gold);}
+.lvup-detail{font-size:11px;color:#fff;font-weight:700;line-height:1.8;}
+.tips-card{font-size:11px;color:#aaffee;font-weight:700;
+  background:rgba(0,255,200,.06);border:1px solid rgba(0,255,200,.18);
+  border-radius:8px;padding:6px 9px;margin-top:3px;line-height:1.7;text-align:left;}
+.ach-toast{display:none;position:fixed;top:13px;left:50%;transform:translateX(-50%);z-index:350;
+  background:rgba(6,6,20,.96);border:1.5px solid var(--purple);border-radius:13px;
+  padding:8px 15px;text-align:center;pointer-events:none;white-space:nowrap;}
+.ach-toast.show{display:block;animation:toastIn .38s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-16px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.ach-toast-title{font-size:9px;color:var(--purple);font-weight:900;letter-spacing:1px;}
+.ach-toast-name{font-size:13px;color:#fff;font-weight:900;}
+
+/* ボス登場 */
+
+/* ========== 雑魚わらわら演出 ========== */
+#warawa-overlay{
+  display:none;position:fixed;inset:0;z-index:490;
+  pointer-events:none;overflow:hidden;
+}
+#warawa-overlay.show{display:block;}
+.warawa-char{
+  position:absolute;
+  font-size:32px;
+  animation:warawaMove linear forwards;
+  will-change:transform,opacity;
+}
+@keyframes warawaMove{
+  0%  {transform:translate(0,0) scale(0) rotate(0deg);   opacity:0;}
+  10% {opacity:1;transform:translate(0,0) scale(1.3) rotate(-10deg);}
+  80% {opacity:1;}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.4) rotate(var(--dr));}
+}
+.warawa-txt{
+  position:absolute;left:50%;top:42%;transform:translateX(-50%);
+  font-family:'Boogaloo',cursive;font-size:clamp(22px,7vw,36px);
+  font-weight:900;color:#fff;white-space:nowrap;text-align:center;
+  text-shadow:0 0 20px rgba(255,100,100,1);
+  opacity:0;animation:warawaTxt .5s 1.2s ease-out forwards;
+}
+@keyframes warawaTxt{from{opacity:0;transform:translateX(-50%) scale(.3)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+
+#boss-entrance{display:none;position:fixed;inset:0;background:rgba(0,0,0,0);
+  z-index:500;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+#boss-entrance.show{display:flex;animation:bossEntranceBg .8s ease-out forwards;}
+@keyframes bossEntranceBg{from{background:rgba(0,0,0,0)}to{background:rgba(0,0,0,.88)}}
+.boss-flash{position:absolute;inset:0;background:#ff0033;
+  animation:bossFlash .18s ease-out forwards;pointer-events:none;}
+@keyframes bossFlash{from{opacity:.7}to{opacity:0}}
+.boss-entrance-emoji{font-size:90px;animation:bossEntrancePop .6s .5s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes bossEntrancePop{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1)}}
+.boss-entrance-text{font-size:clamp(22px,8vw,40px);font-weight:900;
+  color:var(--boss);text-shadow:0 0 28px rgba(255,34,102,1);
+  animation:bossTxtIn .5s .9s ease-out both;}
+@keyframes bossTxtIn{from{opacity:0;transform:scaleX(3)}to{opacity:1;transform:scaleX(1)}}
+.boss-entrance-sub{font-size:13px;color:#ffaacc;font-weight:900;
+  animation:bossTxtIn .4s 1.2s ease-out both;}
+.ko-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
+  align-items:center;justify-content:center;z-index:400;}
+.ko-overlay.show{display:flex;animation:flashKO .12s ease-out;}
+@keyframes flashKO{from{background:rgba(255,255,200,.85)}to{background:rgba(0,0,0,.78)}}
+.ko-main{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.ko-txt{font-size:76px;font-family:'Boogaloo',cursive;color:var(--gold);
+  animation:koBoom .45s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes koBoom{from{transform:scale(0) rotate(-25deg)}to{transform:scale(1)}}
+.ko-winner{font-size:19px;color:#fff;font-weight:900;text-align:center;}
+.stage-clear{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:450;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.stage-clear.show{display:flex;}
+.sc-enemy{font-size:70px;animation:scE .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes scE{from{transform:scale(0)}to{transform:scale(1)}}
+.sc-title{font-size:32px;font-weight:900;color:var(--gold);animation:scF .4s .2s ease-out both;}
+.sc-sub{font-size:13px;color:#fff;font-weight:700;animation:scF .4s .35s ease-out both;}
+.sc-route{display:flex;align-items:center;gap:5px;animation:scF .4s .45s ease-out both;}
+.sc-next{font-size:13px;color:rgba(255,255,255,.4);font-weight:700;animation:scF .4s .55s ease-out both;}
+@keyframes scF{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* リザルト */
+#screen-result{min-height:100svh;width:100%;max-width:430px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px 16px 44px;}
+.win-emoji{font-size:76px;animation:winPop .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes winPop{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1)}}
+.win-text{font-size:23px;font-weight:900;
+  background:linear-gradient(135deg,#ffd700,#ff6600);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.win-sub{color:rgba(255,255,255,.5);font-size:12px;}
+.allclear-banner{background:linear-gradient(135deg,rgba(255,34,102,.15),rgba(68,255,170,.08));
+  border:2px solid var(--boss);border-radius:14px;padding:13px 18px;
+  width:100%;max-width:285px;text-align:center;}
+.allclear-title{font-size:26px;font-weight:900;color:var(--boss);}
+.allclear-sub{font-size:12px;color:#ffaacc;font-weight:700;margin-top:5px;white-space:pre-wrap;}
+.result-stats{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:10px 16px;width:100%;max-width:285px;}
+.stat-row{display:flex;justify-content:space-between;color:#fff;font-size:12px;font-weight:700;
+  padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.stat-row:last-child{border:none;}.stat-v{color:var(--gold);}
+.weakness-summary{width:100%;max-width:285px;background:rgba(68,255,170,.04);
+  border:1px solid rgba(68,255,170,.15);border-radius:11px;padding:9px 13px;}
+.ws-title{font-size:11px;color:#88ffcc;font-weight:900;margin-bottom:5px;}
+.ws-item{font-size:11px;color:#fff;font-weight:700;padding:2px 0;
+  display:flex;align-items:center;gap:5px;}
+.ws-pct{font-size:10px;color:rgba(100,255,180,.6);margin-left:auto;}
+.ach-list{width:100%;max-width:285px;}
+.ach-list-title{color:var(--purple);font-size:11px;font-weight:900;text-align:center;margin-bottom:4px;}
+.ach-badge{display:inline-block;background:rgba(160,60,255,.09);
+  border:1px solid rgba(160,60,255,.25);color:#cc88ff;font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:9px;margin:2px;}
+.btn{border:none;outline:none;cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  font-weight:900;-webkit-user-select:none;user-select:none;border-radius:42px;}
+.btn-start{background:linear-gradient(135deg,#44ffaa,#00aaff);color:#001810;
+  font-size:18px;padding:12px 36px;box-shadow:0 0 20px rgba(68,255,170,.45);
+  letter-spacing:1px;animation:startP 1.6s ease-in-out infinite;}
+@keyframes startP{0%,100%{box-shadow:0 0 14px rgba(68,255,170,.4)}
+  50%{box-shadow:0 0 36px rgba(0,220,255,.85)}}
+.btn-start:active,.btn-retry:active{transform:scale(.92);}
+.btn-retry{background:linear-gradient(135deg,#44ffaa,#00aaff);color:#001810;
+  font-size:18px;padding:12px 32px;letter-spacing:1px;}
+.hidden{display:none!important;}
+
+/* ========== 小画面対応（iPhone 15: 390px / SE: 375px） ========== */
+@media (max-width:410px){
+  #screen-title{padding:16px 14px 34px;gap:10px;}
+  .title-fighters{font-size:46px;}
+  .title-sub{font-size:11px;line-height:1.8;}
+  .save-info{font-size:11px;padding:7px 12px;}
+
+  #screen-select{padding:16px 10px 40px;gap:8px;}
+  .select-title{font-size:16px;}
+  .char-grid{gap:4px;}
+  .char-card{padding:4px 2px;}
+  .char-emoji{font-size:26px;}
+  .char-name{font-size:8px;}
+  .char-skill-label{font-size:7px;}
+  .char-preview{padding:7px 10px;}
+  .preview-name{font-size:14px;}
+  .preview-stats{font-size:10px;}
+
+  .enemy-route{padding:7px 8px;}
+  .route-enemy{font-size:19px;}
+  .route-enemy.boss{font-size:22px;}
+  .route-name{font-size:7px;}
+
+  #screen-game{padding:5px 8px 20px;gap:4px;}
+  .fighter-label{font-size:9px;}
+  .lv-badge{font-size:7px;}
+  .hp-track{height:9px;}
+  .hp-text,.exp-text{font-size:7px;}
+  .vs-badge{font-size:11px;}
+  .skill-label,.skill-ready-badge,.weakness-label{font-size:7px;}
+
+  .combo-zone{height:15px;}
+  .combo-txt{font-size:13px;}
+
+  .battle-stage{height:74px;}
+  .fighter{font-size:36px;}
+  .fighter.p2.boss-char{font-size:46px;}
+  .stage-floor{height:12px;}
+
+  .q-card{padding:6px 10px 8px;}
+  .q-type-badge{font-size:8px;padding:1px 6px;}
+  .word-display{font-size:clamp(30px,10vw,48px);letter-spacing:1px;}
+  .word-hint,.jp-hint{font-size:10px;}
+  .emoji-hint{font-size:46px;}
+  .jp-lead{font-size:17px;}
+  .turn-ind{font-size:9px;padding:1px 6px;}
+  .time-bonus{font-size:9px;height:10px;}
+
+  .choices{gap:5px;}
+  .choice-btn{font-size:14px;padding:8px 5px;min-height:46px;}
+  .choice-btn.eng{font-size:16px;}
+  .choice-emoji{font-size:18px;}
+
+  .explain-title{font-size:10px;}
+  .explain-eng{font-size:26px;}
+  .explain-jp{font-size:15px;}
+
+  .fb-txt{font-size:42px;}
+
+  .boss-entrance-emoji{font-size:72px;}
+  .boss-entrance-sub{font-size:12px;}
+  .ko-txt{font-size:62px;}
+  .ko-winner{font-size:16px;}
+  .sc-enemy{font-size:58px;}
+  .sc-title{font-size:30px;}
+  .sc-sub,.sc-next{font-size:11px;}
+
+  #screen-result{padding:0 10px;}
+  .win-emoji{font-size:62px;}
+  .win-text{font-size:19px;}
+  .allclear-title{font-size:22px;}
+
+  .btn-start{font-size:16px;padding:10px 28px;}
+  .btn-retry{font-size:16px;padding:10px 26px;}
+
+  .lvup-card{padding:14px 14px;min-width:180px;}
+  .lvup-title{font-size:18px;}
+  .lvup-detail{font-size:10px;}
+}
+
+/* ========== さらに小画面（iPhone SE 375px 以下） ========== */
+@media (max-width:380px){
+  .title-fighters{font-size:40px;}
+  .char-emoji{font-size:22px;}
+  .fighter{font-size:32px;}
+  .fighter.p2.boss-char{font-size:40px;}
+  .battle-stage{height:66px;}
+  .word-display{font-size:clamp(26px,9vw,42px);}
+  .emoji-hint{font-size:40px;}
+  .choice-btn{font-size:13px;min-height:42px;padding:7px 4px;}
+  .choice-btn.eng{font-size:15px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-stars" id="stars"></div>
+<div class="bg-ground"></div>
+<div class="fb-overlay"><div class="fb-txt" id="fbTxt"></div></div>
+<div class="lvup-notify" id="lvupNotify">
+  <div class="lvup-title">⬆️ LEVEL UP！</div>
+  <div class="lvup-detail" id="lvupDetail"></div>
+  <div class="tips-card" id="tipsCard"></div>
+</div>
+<div class="ach-toast" id="achToast">
+  <div class="ach-toast-title">🏅 じつりょく かいほう！</div>
+  <div class="ach-toast-name" id="achName"></div>
+</div>
+<div class="ko-overlay" id="koOverlay">
+  <div class="ko-main"><div class="ko-txt">K・O！</div><div class="ko-winner" id="koWinner"></div></div>
+</div>
+<div id="warawa-overlay"></div>
+<div id="boss-entrance">
+  <div class="boss-flash"></div>
+  <div class="boss-entrance-emoji" id="bossEntranceEmoji">👿</div>
+  <div class="boss-entrance-text">BOSS あらわる！</div>
+  <div class="boss-entrance-sub">えいごのちからをみせてみろ！</div>
+</div>
+<div class="stage-clear" id="stageClear">
+  <div class="sc-enemy" id="scEnemy">💀</div>
+  <div class="sc-title" id="scTitle">やっつけた！</div>
+  <div class="sc-sub" id="scSub"></div>
+  <div class="sc-route" id="scRoute"></div>
+  <div class="sc-next" id="scNext"></div>
+</div>
+
+<div id="app">
+  <!-- タイトル -->
+  <div id="screen-title">
+    <div class="title-fighters">🌍</div>
+    <div class="title-logo">English<br>Battle！</div>
+    <div class="title-sub">
+      えいごをおぼえて　てきをたおせ！<br>
+      英単語→日本語・日本語→英単語　の2しゅるい！🔤⚔️
+    </div>
+    <div class="save-info" id="saveInfo" style="display:none"></div>
+    <button class="btn btn-start" onclick="showSelect()">Start！</button>
+    <div class="save-clear" id="saveClearBtn" style="display:none" onclick="clearSave()">セーブデータをけす</div>
+    <div class="back-btn" onclick="goTop()">◀ もどる</div>
+  </div>
+
+  <!-- キャラ選択 -->
+  <div id="screen-select" class="hidden">
+    <div class="select-title">🎮 ファイターをえらべ！</div>
+    <div class="char-grid" id="charGrid"></div>
+    <div class="char-preview" id="charPreview">
+      <div class="preview-name" id="previewName"></div>
+      <div class="preview-stats" id="previewStats"></div>
+    </div>
+    <div class="enemy-route">
+      <div class="route-title">◆ STORY MODE ◆</div>
+      <div class="route-steps" id="routeSteps"></div>
+    </div>
+    <button class="btn btn-start" id="selectBtn" onclick="confirmChar()" style="opacity:.38;pointer-events:none;">
+      Let's Go！
+    </button>
+  </div>
+
+  <!-- ゲーム -->
+  <div id="screen-game" class="hidden">
+    <div class="status-row">
+      <div class="status-block">
+        <div class="fighter-label">
+          <span id="p1ef">🐉</span><span id="p1nm">Player</span>
+          <span class="lv-badge" id="p1lv">Lv.1</span>
+        </div>
+        <div class="hp-track"><div class="hp-fill p1" id="hp1" style="width:100%"></div></div>
+        <div class="hp-text" id="hp1t">HP 100/100</div>
+        <div class="exp-track"><div class="exp-fill" id="exp1" style="width:0%"></div></div>
+        <div class="exp-text" id="exp1t">EXP 0/10</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="status-block right">
+        <div class="fighter-label" style="flex-direction:row-reverse">
+          <span id="p2ef">🤖</span><span id="p2nm">Enemy</span>
+          <span class="lv-badge" id="p2lv">Lv.1</span>
+        </div>
+        <div class="hp-track"><div class="hp-fill p2" id="hp2" style="width:100%"></div></div>
+        <div class="hp-text" style="text-align:right" id="hp2t">HP 100/100</div>
+      </div>
+    </div>
+    <div class="skill-row">
+      <div class="skill-label" id="skillLabel">⚡スキル</div>
+      <div class="skill-track"><div class="skill-fill" id="skillFill" style="width:0%"></div></div>
+      <div class="skill-ready-badge" id="skillReadyBadge" style="display:none">READY！</div>
+    </div>
+    <div class="weakness-bar">
+      <div class="weakness-label">📊 さいきん</div>
+      <div class="weakness-dots" id="weaknessDots"></div>
+    </div>
+    <div class="combo-zone"><span class="combo-txt" id="comboTxt"></span></div>
+    <div class="battle-stage" id="battleStage">
+      <div class="stage-grid"></div>
+      <div class="boss-bg" id="bossBg"></div>
+      <div class="stage-floor"></div>
+      <div class="fighter p1" id="f1">🐉</div>
+      <div class="fighter p2" id="f2">🤖</div>
+    </div>
+    <div class="round-row">
+      <div class="round-badge" id="roundBadge">Round 1</div>
+      <span class="streak-badge" id="streakBadge"></span>
+      <div class="score-row">
+        <span class="sc1" id="sc1">☆</span>
+        <span style="color:rgba(255,255,255,.18)">|</span>
+        <span class="sc2" id="sc2">☆</span>
+      </div>
+    </div>
+    <div class="event-notice" id="eventNotice"></div>
+    <!-- 問題カード -->
+    <div class="q-card" id="qCard">
+      <div class="q-timer"><div class="q-timer-fill" id="timerFill" style="width:100%"></div></div>
+      <div class="q-type-badge eng-to-jp" id="qTypeBadge">えいご → にほんご</div>
+      <div class="emoji-hint" id="emojiHint">🍎</div>
+      <div class="word-display" id="wordDisplay">apple</div>
+      <div class="word-hint" id="wordHint"></div>
+      <div class="jp-lead hidden" id="jpLead"></div>
+      <div class="choices" id="choicesArea"></div>
+      <div class="time-bonus" id="timeBonus"></div>
+    </div>
+    <!-- 解説 -->
+    <div class="explain-box" id="explainBox">
+      <div class="explain-title" id="explainTitle">📖 かいせつ</div>
+      <div class="explain-word-card">
+        <div style="font-size:40px;margin-bottom:4px;" id="exEmoji">🍎</div>
+        <div class="explain-eng" id="exEng">apple</div>
+        <div class="explain-jp" id="exJp">りんご</div>
+        <div class="explain-cat" id="exCat">🍎 くだもの</div>
+        <div class="explain-reibun" id="exReibun"></div>
+      </div>
+      <div class="explain-tip" id="explainTip"></div>
+      <button class="explain-next-btn"
+        ontouchend="onExplainNext();event.preventDefault()"
+        onclick="onExplainNext()">
+        わかった！つぎへ ➡️
+      </button>
+    </div>
+  </div>
+
+  <!-- リザルト -->
+  <div id="screen-result" class="hidden">
+    <div class="win-emoji" id="winEmoji">🎉</div>
+    <div class="win-text" id="winText"></div>
+    <div class="win-sub" id="winSub"></div>
+    <div class="allclear-banner" id="allclearBanner" style="display:none">
+      <div class="allclear-title">👑 ALL CLEAR！！</div>
+      <div class="allclear-sub" id="allclearSub"></div>
+    </div>
+    <div class="result-stats">
+      <div class="stat-row"><span>レベル</span><span class="stat-v" id="rLv">-</span></div>
+      <div class="stat-row"><span>せいかい</span><span class="stat-v" id="rOk">-</span></div>
+      <div class="stat-row"><span>まちがい</span><span class="stat-v" id="rNg">-</span></div>
+      <div class="stat-row"><span>さいこうコンボ</span><span class="stat-v" id="rCombo">-</span></div>
+    </div>
+    <div class="weakness-summary" id="weaknessSummary" style="display:none">
+      <div class="ws-title">📈 にがてな たんご</div>
+      <div id="wsItems"></div>
+    </div>
+    <div class="ach-list" id="achList" style="display:none">
+      <div class="ach-list-title">🏅 かいほうした じつりょく</div>
+      <div id="achBadges"></div>
+    </div>
+    <button class="btn btn-retry" onclick="toSelect()">もういちど！</button>
+    <div class="back-btn" onclick="goTop()" style="margin-top:6px">◀ もどる</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 英単語データ（小1〜4レベル、カテゴリ付き）
+// diff: 1=超基本, 2=基本, 3=やや難, 4=難
+// ============================================================
+const WORDS = [
+  // 色・形
+  {e:'red',      j:'あか',      emoji:'🔴', cat:'🎨 いろ', ex:'I like red apples. / あかいりんごがすきです。', diff:1},
+  {e:'blue',     j:'あお',      emoji:'🔵', cat:'🎨 いろ', ex:'The sky is blue. / そらはあおいです。', diff:1},
+  {e:'green',    j:'みどり',    emoji:'🟢', cat:'🎨 いろ', ex:'The grass is green. / くさはみどりです。', diff:1},
+  {e:'yellow',   j:'きいろ',    emoji:'🟡', cat:'🎨 いろ', ex:'The sun is yellow. / たいようはきいろです。', diff:1},
+  {e:'white',    j:'しろ',      emoji:'⬜', cat:'🎨 いろ', ex:'Snow is white. / ゆきはしろいです。', diff:1},
+  {e:'black',    j:'くろ',      emoji:'⬛', cat:'🎨 いろ', ex:'My cat is black. / わたしのねこはくろです。', diff:1},
+  {e:'pink',     j:'ピンク',    emoji:'🌸', cat:'🎨 いろ', ex:'I like pink flowers. / ピンクのはながすきです。', diff:1},
+  {e:'orange',   j:'オレンジ',  emoji:'🟠', cat:'🎨 いろ', ex:'An orange is orange. / オレンジはオレンジいろです。', diff:1},
+  // 数字
+  {e:'one',      j:'いち',      emoji:'1️⃣', cat:'🔢 かず', ex:'I have one dog. / いぬが1ぴきいます。', diff:1},
+  {e:'two',      j:'に',        emoji:'2️⃣', cat:'🔢 かず', ex:'I have two cats. / ねこが2ひきいます。', diff:1},
+  {e:'three',    j:'さん',      emoji:'3️⃣', cat:'🔢 かず', ex:'Three birds are singing.', diff:1},
+  {e:'four',     j:'よん',      emoji:'4️⃣', cat:'🔢 かず', ex:'I have four books.', diff:1},
+  {e:'five',     j:'ご',        emoji:'5️⃣', cat:'🔢 かず', ex:'Five apples, please.', diff:1},
+  {e:'six',      j:'ろく',      emoji:'6️⃣', cat:'🔢 かず', ex:'I am six years old.', diff:1},
+  {e:'seven',    j:'なな・しち',emoji:'7️⃣', cat:'🔢 かず', ex:'Seven days in a week.', diff:1},
+  {e:'eight',    j:'はち',      emoji:'8️⃣', cat:'🔢 かず', ex:'I have eight crayons.', diff:1},
+  {e:'nine',     j:'きゅう',    emoji:'9️⃣', cat:'🔢 かず', ex:'Nine planets exist.', diff:1},
+  {e:'ten',      j:'じゅう',    emoji:'🔟', cat:'🔢 かず', ex:'I have ten fingers.', diff:1},
+  // からだ
+  {e:'eye',      j:'め',        emoji:'👁️', cat:'👁️ からだ', ex:'I have big eyes.', diff:1},
+  {e:'ear',      j:'みみ',      emoji:'👂', cat:'👁️ からだ', ex:'Rabbits have big ears.', diff:1},
+  {e:'nose',     j:'はな',      emoji:'👃', cat:'👁️ からだ', ex:'Dogs have good noses.', diff:1},
+  {e:'mouth',    j:'くち',      emoji:'👄', cat:'👁️ からだ', ex:'Open your mouth.', diff:1},
+  {e:'hand',     j:'て',        emoji:'✋', cat:'👁️ からだ', ex:'Wash your hands.', diff:1},
+  {e:'foot',     j:'あし',      emoji:'🦶', cat:'👁️ からだ', ex:'My feet are big.', diff:1},
+  {e:'head',     j:'あたま',    emoji:'🤯', cat:'👁️ からだ', ex:'My head hurts.', diff:1},
+  // 食べ物
+  {e:'apple',    j:'りんご',    emoji:'🍎', cat:'🍎 たべもの', ex:'An apple a day.', diff:1},
+  {e:'banana',   j:'バナナ',    emoji:'🍌', cat:'🍎 たべもの', ex:'I like bananas.', diff:1},
+  {e:'bread',    j:'パン',      emoji:'🍞', cat:'🍎 たべもの', ex:'I eat bread every day.', diff:1},
+  {e:'milk',     j:'ぎゅうにゅう',emoji:'🥛', cat:'🍎 たべもの', ex:'I drink milk every morning.', diff:1},
+  {e:'water',    j:'みず',      emoji:'💧', cat:'🍎 たべもの', ex:'Please give me water.', diff:1},
+  {e:'rice',     j:'ごはん',    emoji:'🍚', cat:'🍎 たべもの', ex:'I eat rice for lunch.', diff:1},
+  {e:'cake',     j:'ケーキ',    emoji:'🎂', cat:'🍎 たべもの', ex:'Happy birthday cake!', diff:1},
+  {e:'egg',      j:'たまご',    emoji:'🥚', cat:'🍎 たべもの', ex:'I eat an egg every day.', diff:1},
+  {e:'fish',     j:'さかな',    emoji:'🐟', cat:'🍎 たべもの', ex:'We eat fish in Japan.', diff:1},
+  {e:'meat',     j:'にく',      emoji:'🥩', cat:'🍎 たべもの', ex:'I like meat very much.', diff:2},
+  {e:'soup',     j:'スープ',    emoji:'🍵', cat:'🍎 たべもの', ex:'This soup is hot.', diff:2},
+  {e:'salad',    j:'サラダ',    emoji:'🥗', cat:'🍎 たべもの', ex:'I eat salad every day.', diff:2},
+  // 動物
+  {e:'dog',      j:'いぬ',      emoji:'🐶', cat:'🐶 どうぶつ', ex:'My dog is cute.', diff:1},
+  {e:'cat',      j:'ねこ',      emoji:'🐱', cat:'🐶 どうぶつ', ex:'My cat is sleeping.', diff:1},
+  {e:'bird',     j:'とり',      emoji:'🐦', cat:'🐶 どうぶつ', ex:'A bird is singing.', diff:1},
+  {e:'rabbit',   j:'うさぎ',    emoji:'🐰', cat:'🐶 どうぶつ', ex:'Rabbits are fast.', diff:1},
+  {e:'horse',    j:'うま',      emoji:'🐴', cat:'🐶 どうぶつ', ex:'I can ride a horse.', diff:2},
+  {e:'elephant', j:'ぞう',      emoji:'🐘', cat:'🐶 どうぶつ', ex:'Elephants are big.', diff:2},
+  {e:'lion',     j:'ライオン',  emoji:'🦁', cat:'🐶 どうぶつ', ex:'The lion is strong.', diff:2},
+  {e:'monkey',   j:'さる',      emoji:'🐵', cat:'🐶 どうぶつ', ex:'Monkeys climb trees.', diff:2},
+  {e:'bear',     j:'くま',      emoji:'🐻', cat:'🐶 どうぶつ', ex:'Bears like honey.', diff:2},
+  {e:'tiger',    j:'とら',      emoji:'🐯', cat:'🐶 どうぶつ', ex:'A tiger is fast.', diff:2},
+  {e:'snake',    j:'へび',      emoji:'🐍', cat:'🐶 どうぶつ', ex:'That snake is big.', diff:2},
+  {e:'frog',     j:'かえる',    emoji:'🐸', cat:'🐶 どうぶつ', ex:'Frogs jump high.', diff:2},
+  // 乗り物
+  {e:'car',      j:'くるま',    emoji:'🚗', cat:'🚗 のりもの', ex:'My dad has a car.', diff:1},
+  {e:'bus',      j:'バス',      emoji:'🚌', cat:'🚗 のりもの', ex:'I go to school by bus.', diff:1},
+  {e:'train',    j:'でんしゃ',  emoji:'🚃', cat:'🚗 のりもの', ex:'The train is fast.', diff:1},
+  {e:'plane',    j:'ひこうき',  emoji:'✈️', cat:'🚗 のりもの', ex:'I went by plane.', diff:2},
+  {e:'ship',     j:'ふね',      emoji:'🚢', cat:'🚗 のりもの', ex:'A big ship is coming.', diff:2},
+  {e:'bike',     j:'じてんしゃ',emoji:'🚲', cat:'🚗 のりもの', ex:'I ride my bike to school.', diff:2},
+  // 自然・天気
+  {e:'sun',      j:'たいよう',  emoji:'☀️', cat:'☀️ しぜん', ex:'The sun is shining.', diff:1},
+  {e:'moon',     j:'つき',      emoji:'🌙', cat:'☀️ しぜん', ex:'The moon is beautiful.', diff:1},
+  {e:'star',     j:'ほし',      emoji:'⭐', cat:'☀️ しぜん', ex:'I can see many stars.', diff:1},
+  {e:'rain',     j:'あめ',      emoji:'🌧️', cat:'☀️ しぜん', ex:'It is raining today.', diff:1},
+  {e:'snow',     j:'ゆき',      emoji:'❄️', cat:'☀️ しぜん', ex:'Let us play in the snow!', diff:1},
+  {e:'wind',     j:'かぜ',      emoji:'🌬️', cat:'☀️ しぜん', ex:'The wind is strong.', diff:1},
+  {e:'cloud',    j:'くも',      emoji:'☁️', cat:'☀️ しぜん', ex:'I see white clouds.', diff:2},
+  {e:'river',    j:'かわ',      emoji:'🏞️', cat:'☀️ しぜん', ex:'Fish live in the river.', diff:2},
+  {e:'sea',      j:'うみ',      emoji:'🌊', cat:'☀️ しぜん', ex:'I love the sea.', diff:2},
+  {e:'mountain', j:'やま',      emoji:'🏔️', cat:'☀️ しぜん', ex:'The mountain is high.', diff:2},
+  {e:'flower',   j:'はな',      emoji:'🌸', cat:'☀️ しぜん', ex:'Flowers are beautiful.', diff:1},
+  {e:'tree',     j:'き',        emoji:'🌳', cat:'☀️ しぜん', ex:'A big tree is in the park.', diff:1},
+  // 学校
+  {e:'school',   j:'がっこう',  emoji:'🏫', cat:'📚 がっこう', ex:'I go to school.', diff:1},
+  {e:'book',     j:'ほん',      emoji:'📕', cat:'📚 がっこう', ex:'I read a book.', diff:1},
+  {e:'pencil',   j:'えんぴつ',  emoji:'✏️', cat:'📚 がっこう', ex:'Please use a pencil.', diff:1},
+  {e:'pen',      j:'ペン',      emoji:'🖊️', cat:'📚 がっこう', ex:'Write with a pen.', diff:1},
+  {e:'bag',      j:'かばん',    emoji:'🎒', cat:'📚 がっこう', ex:'My bag is heavy.', diff:1},
+  {e:'desk',     j:'つくえ',    emoji:'🪑', cat:'📚 がっこう', ex:'Put it on your desk.', diff:2},
+  // スポーツ
+  {e:'ball',     j:'ボール',    emoji:'⚽', cat:'⚽ スポーツ', ex:'Kick the ball!', diff:1},
+  {e:'run',      j:'はしる',    emoji:'🏃', cat:'⚽ スポーツ', ex:'I run every morning.', diff:1},
+  {e:'swim',     j:'およぐ',    emoji:'🏊', cat:'⚽ スポーツ', ex:'I can swim well.', diff:2},
+  {e:'jump',     j:'とぶ',      emoji:'🦘', cat:'⚽ スポーツ', ex:'Jump high!', diff:2},
+  {e:'dance',    j:'おどる',    emoji:'💃', cat:'⚽ スポーツ', ex:'I love to dance.', diff:2},
+  {e:'sing',     j:'うたう',    emoji:'🎤', cat:'⚽ スポーツ', ex:'Let us sing a song.', diff:2},
+  {e:'play',     j:'あそぶ',    emoji:'🎮', cat:'⚽ スポーツ', ex:'Let us play together.', diff:1},
+  {e:'soccer',   j:'サッカー',  emoji:'⚽', cat:'⚽ スポーツ', ex:'I play soccer on Sunday.', diff:2},
+  // 家族
+  {e:'mother',   j:'おかあさん',emoji:'👩', cat:'👨‍👩‍👧 かぞく', ex:'My mother is kind.', diff:1},
+  {e:'father',   j:'おとうさん',emoji:'👨', cat:'👨‍👩‍👧 かぞく', ex:'My father is tall.', diff:1},
+  {e:'friend',   j:'ともだち',  emoji:'🤝', cat:'👨‍👩‍👧 かぞく', ex:'She is my best friend.', diff:1},
+  {e:'boy',      j:'おとこのこ',emoji:'👦', cat:'👨‍👩‍👧 かぞく', ex:'That boy is my brother.', diff:1},
+  {e:'girl',     j:'おんなのこ',emoji:'👧', cat:'👨‍👩‍👧 かぞく', ex:'That girl is my sister.', diff:1},
+  // 形容詞
+  {e:'big',      j:'おおきい',  emoji:'🐘', cat:'📝 ことば', ex:'That is a big dog.', diff:1},
+  {e:'small',    j:'ちいさい',  emoji:'🐭', cat:'📝 ことば', ex:'This is a small cat.', diff:1},
+  {e:'hot',      j:'あつい',    emoji:'🔥', cat:'📝 ことば', ex:'It is hot today.', diff:1},
+  {e:'cold',     j:'つめたい',  emoji:'🧊', cat:'📝 ことば', ex:'It is cold today.', diff:1},
+  {e:'fast',     j:'はやい',    emoji:'⚡', cat:'📝 ことば', ex:'Cheetahs are fast.', diff:1},
+  {e:'slow',     j:'おそい',    emoji:'🐢', cat:'📝 ことば', ex:'Turtles are slow.', diff:2},
+  {e:'good',     j:'よい・いい',emoji:'👍', cat:'📝 ことば', ex:'That is a good idea!', diff:1},
+  {e:'bad',      j:'わるい',    emoji:'👎', cat:'📝 ことば', ex:'This is bad weather.', diff:1},
+  {e:'happy',    j:'うれしい',  emoji:'😊', cat:'📝 ことば', ex:'I am very happy!', diff:2},
+  {e:'sad',      j:'かなしい',  emoji:'😢', cat:'📝 ことば', ex:'I feel sad today.', diff:2},
+  {e:'cute',     j:'かわいい',  emoji:'🥰', cat:'📝 ことば', ex:'Your cat is so cute!', diff:2},
+  {e:'strong',   j:'つよい',    emoji:'💪', cat:'📝 ことば', ex:'He is very strong.', diff:2},
+  // 時間
+  {e:'morning',  j:'あさ',      emoji:'🌅', cat:'📅 じかん', ex:'Good morning!', diff:1},
+  {e:'night',    j:'よる',      emoji:'🌃', cat:'📅 じかん', ex:'Good night!', diff:1},
+  {e:'today',    j:'きょう',    emoji:'📅', cat:'📅 じかん', ex:'What day is today?', diff:2},
+  // やや難しい
+  {e:'beautiful',j:'うつくしい',emoji:'🌺', cat:'📝 ことば', ex:'The view is beautiful.', diff:3},
+  {e:'delicious',j:'おいしい',  emoji:'😋', cat:'📝 ことば', ex:'This pizza is delicious!', diff:3},
+  {e:'together', j:'いっしょに',emoji:'🤲', cat:'📝 ことば', ex:'Let us go together!', diff:3},
+  {e:'always',   j:'いつも',    emoji:'♾️', cat:'📝 ことば', ex:'I always brush my teeth.', diff:3},
+  {e:'sometimes',j:'ときどき',  emoji:'🎲', cat:'📝 ことば', ex:'I sometimes eat pizza.', diff:3},
+];
+
+// ============================================================
+// ストーリー敵
+// ============================================================
+const STORY_ENEMIES = [
+  {s:0,  e:'🐌', n:'スライム',       hp:50,  diff:[1],      qtype:'e2j',  desc:'えいご→にほんご だけ！'},
+  {s:1,  e:'🐛', n:'イモムシ',       hp:65,  diff:[1],      qtype:'both', desc:'にほんご→えいごも でるぞ！'},
+  {s:2,  e:'🐸', n:'カエル',         hp:80,  diff:[1,2],    qtype:'both', desc:'すこし むずかしく なった！'},
+  {s:3,  e:'🐗', n:'ゴブリン',       hp:95,  diff:[1,2],    qtype:'both', desc:'どうぶつ・たべもの！'},
+  {s:4,  e:'🐻', n:'オーク',         hp:115, diff:[1,2],    qtype:'both', desc:'いろ・かず・からだ！'},
+  {s:5,  e:'🦊', n:'フォックス',     hp:135, diff:[2,3],    qtype:'both', desc:'3もじいじょうの たんご！'},
+  {s:6,  e:'🐯', n:'トラ',           hp:155, diff:[2,3],    qtype:'both', desc:'ようび・じかんの たんご！'},
+  {s:7,  e:'🐴', n:'ドラゴンナイト', hp:175, diff:[2,3],    qtype:'both', desc:'のりもの・しぜん！'},
+  {s:8,  e:'🧙', n:'まほうつかい',   hp:200, diff:[2,3,4],  qtype:'both', desc:'むずかしい たんご！'},
+  {s:9,  e:'🔥', n:'ほのおのまじん', hp:230, diff:[3,4],    qtype:'both', desc:'さいなんの たんごたち！'},
+  {s:10, e:'👿', n:'BOSS',           hp:400, diff:[1,2,3,4],qtype:'both', desc:'ぜんぶ でる！さいきょう！', isBoss:true},
+];
+
+const CHARS = [
+  {e:'🐉',n:'ドラゴン',   skill:'🔥 ドラゴンブレス',  skillDesc:'3問ぶんのダメージ！',        skillType:'burst'},
+  {e:'🦁',n:'ライオン',   skill:'⚡ ライオンラッシュ', skillDesc:'コンボ×3スタート！',         skillType:'combo'},
+  {e:'🦉',n:'フクロウ',   skill:'🌙 ちえのひかり',     skillDesc:'つぎの問題を自動せいかい！',  skillType:'auto'},
+  {e:'🐊',n:'クロコ',     skill:'🦷 クラッシャーバイト',skillDesc:'敵HP30%けずる！',             skillType:'percent'},
+  {e:'🦔',n:'ハリネズミ', skill:'🌿 ハリボールヒール', skillDesc:'HP30かいふく！',              skillType:'heal'},
+  {e:'🐅',n:'タイガー',   skill:'🐾 スラッシュクロー', skillDesc:'つぎのこうげき×4！',         skillType:'crit'},
+  {e:'🦊',n:'フォックス', skill:'🌀 フォックスファイア',skillDesc:'敵に毎問5ダメージ！',        skillType:'poison'},
+  {e:'🐺',n:'ウルフ',    skill:'🐾 パックハウル',     skillDesc:'ATK×2（10びょう）！',         skillType:'atkup'},
+  {e:'🐢',n:'タートル',   skill:'🛡️ こうらガード',    skillDesc:'つぎの敵こうげきを0に！',     skillType:'shield'},
+  {e:'🦅',n:'イーグル',   skill:'🪽 サンダーダイブ',   skillDesc:'まとめて50ダメージ！',        skillType:'zap'},
+  {e:'🦚',n:'クジャク',   skill:'✨ プリズムフェザー', skillDesc:'全スコア1.5倍（5問）！',      skillType:'prism'},
+  {e:'🐇',n:'ラビット',   skill:'🎀 ラッキーステップ', skillDesc:'HPとスキルゲージ全回復！',    skillType:'lucky'},
+  {e:'🦋',n:'バタフライ', skill:'🦋 マジックダスト',   skillDesc:'コンボが切れない（5問）！',   skillType:'nobreak'},
+  {e:'🐸',n:'カエル',    skill:'💚 スーパージャンプ', skillDesc:'ダメージ×3（次の1問）！',     skillType:'triple'},
+  {e:'🐗',n:'イノシシ',   skill:'💥 メガとっしん',     skillDesc:'敵HPを半分にする！',         skillType:'half'},
+  {e:'🦄',n:'ユニコーン', skill:'✨ ミラクルホーン',   skillDesc:'HPフル回復＋ATK+10！',        skillType:'miracle'},
+];
+
+const HIT_FX=['💥','⚡','✨','🌟','💫'];
+const SPECIALS=['Excellent！','Perfect！','Amazing！'];
+const EVENTS=[
+  {type:'bonus',text:'🌟 Double Score！ つぎのせいかいは2ばいダメージ！',dmgMult:2},
+  {type:'heal', text:'💊 かいふくポーション！ HPが20かいふく！',heal:20},
+  {type:'danger',text:'⚠️ ピンチ！ つぎのまちがいは2ばいダメージ！',penalty:2},
+];
+const TIPS=[
+  '💡 単語は「声に出して」おぼえよう！\n目・耳・口を全部つかうと　はやくおぼえられる！',
+  '💡 絵とセットでおぼえよう！\n"apple"といったら　りんごの絵をうかべる！',
+  '💡 英語の文で使ってみよう！\n"I like apples."のように　文にするとおぼえやすい！',
+  '💡 毎日3〜5こずつおぼえよう！\nむりせず　まいにちすこしずつ　つづけることが大事！',
+  '💡 似た発音の単語に注意！\n"ship / sheep"・"cat / cut"などのちがいを聞いてみよう！',
+  '💡 グループでおぼえよう！\n「動物」「色」「食べ物」などでまとめると記憶しやすい！',
+  '💡 英語のアルファベットをしっかりおぼえよう！\nAからZまでスラスラいえると　読み書きが楽になる！',
+  '💡 単語の最初の文字をヒントにしよう！\n"b..."ときたら　banana・bird・bookなどが候補！',
+];
+
+const SAVE_KEY='engBattle_v1';
+function loadSave(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))||null;}catch{return null;}}
+function writeSave(){
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({
+    pLv:G.pLv,pExp:G.pExp,pExpNext:G.pExpNext,pAtk:G.pAtk,pMaxHp:G.pMaxHp,
+    totalWins:G.totalWins,winStreak:G.winStreak,
+    achievements:[...G.achievements],charIdx:G.charIdx,tipIdx:G.tipIdx,
+    weakWords:G.weakWords,stageIdx:G.stageIdx,
+  }));}catch{}
+}
+function clearSave(){if(!confirm('セーブデータをけしますか？'))return;localStorage.removeItem(SAVE_KEY);location.reload();}
+function goTop(){window.location.href='gakushuu-portal.html';}
+
+let G={};
+function initG(){
+  const sv=loadSave();
+  G={
+    charIdx:sv?.charIdx??0,
+    get pChar(){return CHARS[this.charIdx];},
+    stageIdx:sv?.stageIdx??0,
+    get currentEnemy(){return STORY_ENEMIES[this.stageIdx];},
+    eHp:0,eMaxHp:0,pHp:0,pMaxHp:sv?.pMaxHp??100,
+    pLv:sv?.pLv??1,pExp:sv?.pExp??0,pExpNext:sv?.pExpNext??10,pAtk:sv?.pAtk??20,
+    round:1,wins:[0,0],skillGauge:0,skillMax:100,
+    skillActive:false,skillTimer:0,poisonActive:false,critNext:false,autoNext:false,
+    combo:0,maxCombo:0,currentEvent:null,
+    timerMax:22,timerLeft:22,timerInterval:null,
+    winStreak:sv?.winStreak??0,totalWins:sv?.totalWins??0,
+    achievements:[...(sv?.achievements??[])],sessionAch:[],
+    correct:0,wrong:0,locked:false,q:null,tipIdx:sv?.tipIdx??0,
+    weakWords:sv?.weakWords??{},recentResults:[],_qCount:0,
+    usedWords:new Set(),
+  };
+  G.pHp=G.pMaxHp;
+}
+
+// 星
+(()=>{
+  const c=document.getElementById('stars');
+  for(let i=0;i<55;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+.8;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.5+Math.random()*2}s`;
+    c.appendChild(s);
+  }
+  const sv=loadSave();
+  if(sv){
+    const nextEn=STORY_ENEMIES[Math.min(sv.stageIdx??0,STORY_ENEMIES.length-1)];
+    document.getElementById('saveInfo').style.display='block';
+    document.getElementById('saveInfo').innerHTML=`💾 Save：Lv.<b>${sv.pLv}</b>　ATK <b>${sv.pAtk}</b><br>つぎのてき：${nextEn.e} <b>${nextEn.n}</b>`;
+    document.getElementById('saveClearBtn').style.display='block';
+  }
+})();
+
+function showScr(id){
+  ['title','select','game','result'].forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
+  document.getElementById('screen-'+id).classList.remove('hidden');
+  document.getElementById('app').scrollTop=0;
+}
+function buildRoute(activeStage){
+  const steps=document.getElementById('routeSteps');steps.innerHTML='';
+  STORY_ENEMIES.forEach((en,i)=>{
+    if(i>0){const a=document.createElement('div');a.className='route-arrow';a.textContent='▶';steps.appendChild(a);}
+    const step=document.createElement('div');step.className='route-step';
+    const isDone=i<activeStage,isActive=i===activeStage;
+    step.innerHTML=`<div class="route-enemy${en.isBoss?' boss':''}${isDone?' done':isActive?' active':''}">${isDone?'✅':en.e}</div>
+                    <div class="route-name${isActive?' active':''}">${en.n}</div>`;
+    steps.appendChild(step);
+  });
+}
+function showSelect(){
+  initG();buildRoute(G.stageIdx);
+  const grid=document.getElementById('charGrid');grid.innerHTML='';
+  CHARS.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='char-card';
+    if(i===G.charIdx)d.classList.add('selected');
+    d.innerHTML=`<div class="char-emoji">${c.e}</div><div class="char-name">${c.n}</div><div class="char-skill-label">${c.skill.substring(0,8)}</div>`;
+    d.addEventListener('click',()=>{
+      document.querySelectorAll('.char-card').forEach(x=>x.classList.remove('selected'));
+      d.classList.add('selected');G.charIdx=i;updateCharPreview();
+      const b=document.getElementById('selectBtn');b.style.opacity='1';b.style.pointerEvents='auto';
+    });
+    grid.appendChild(d);
+  });
+  updateCharPreview();
+  const b=document.getElementById('selectBtn');b.style.opacity='1';b.style.pointerEvents='auto';
+  showScr('select');
+}
+function updateCharPreview(){
+  const c=CHARS[G.charIdx];
+  document.getElementById('charPreview').classList.add('show');
+  document.getElementById('previewName').textContent=`${c.e} ${c.n}`;
+  document.getElementById('previewStats').textContent=`とくいわざ：${c.skill} — ${c.skillDesc}`;
+}
+function confirmChar(){writeSave();startStage();}
+
+function startStage(){
+  const en=G.currentEnemy;
+  if(en.isBoss){showBossEntrance(en,()=>startBattle(en));}else{startBattle(en);}
+}
+
+// ============================================================
+//  雑魚わらわら演出
+// ============================================================
+function showWarawa(mobs, onDone){
+  const ov = document.getElementById('warawa-overlay');
+  ov.innerHTML = '';
+  ov.classList.add('show');
+
+  const W = window.innerWidth, H = window.innerHeight;
+  const total = 28;          // 出す数
+  const duration = 2200;     // 1キャラのアニメ時間(ms)
+  const stagger  = 60;       // 出現間隔(ms)
+
+  for(let i = 0; i < total; i++){
+    setTimeout(()=>{
+      const el = document.createElement('div');
+      el.className = 'warawa-char';
+      el.textContent = mobs[Math.floor(Math.random()*mobs.length)];
+      // 開始位置：画面端からランダム
+      const side = Math.floor(Math.random()*4);
+      let sx,sy;
+      if(side===0){sx=Math.random()*W; sy=-40;}
+      else if(side===1){sx=Math.random()*W; sy=H+40;}
+      else if(side===2){sx=-40; sy=Math.random()*H;}
+      else{sx=W+40; sy=Math.random()*H;}
+      // 移動先：画面中心付近にランダム散らばり
+      const tx = W/2 + (Math.random()-0.5)*W*0.8 - sx;
+      const ty = H/2 + (Math.random()-0.5)*H*0.8 - sy;
+      const rot = (Math.random()-0.5)*720;
+      el.style.cssText =
+        `left:${sx}px;top:${sy}px;`+
+        `--dx:${tx}px;--dy:${ty}px;--dr:${rot}deg;`+
+        `animation-duration:${duration}ms;`+
+        `font-size:${24+Math.random()*22}px;`;
+      ov.appendChild(el);
+      setTimeout(()=>el.remove(), duration+100);
+    }, i * stagger);
+  }
+
+  // テキスト
+  const txt = document.createElement('div');
+  txt.className = 'warawa-txt';
+  txt.textContent = '⚠️ BOSS が せまっているぞ！！';
+  ov.appendChild(txt);
+
+  // 演出終了→コールバック
+  const totalTime = total * stagger + duration + 200;
+  setTimeout(()=>{
+    ov.classList.remove('show');
+    ov.innerHTML='';
+    onDone();
+  }, totalTime);
+}
+
+function showBossEntrance(en,cb){
+  showWarawa(['🐌','🐛','🐸','🐗','🐻','🦊','🐯','🐴','🧙','🔥'], ()=>{
+    const ov=document.getElementById('boss-entrance');
+    document.getElementById('bossEntranceEmoji').textContent=en.e;
+    ov.classList.add('show');
+    setTimeout(()=>{ov.classList.remove('show');cb();},2800);
+  });
+}
+function startBattle(en){
+  const isBoss=!!en.isBoss;
+  G.eMaxHp=en.hp+G.stageIdx*10;G.eHp=G.eMaxHp;G.pHp=G.pMaxHp;
+  G.round=1;G.wins=[0,0];G.combo=0;G.maxCombo=0;
+  G.skillGauge=0;G.skillActive=false;G.poisonActive=false;G.critNext=false;G.autoNext=false;
+  G.correct=0;G.wrong=0;G.sessionAch=[];G.currentEvent=null;G._qCount=0;G.usedWords=new Set();
+  clearTimer();
+  const pc=G.pChar;
+  ['p1ef','f1'].forEach(id=>document.getElementById(id).textContent=pc.e);
+  document.getElementById('p1nm').textContent=pc.n;
+  ['p2ef','f2'].forEach(id=>document.getElementById(id).textContent=en.e);
+  document.getElementById('p2nm').textContent=en.n;
+  document.getElementById('skillLabel').textContent=pc.skill;
+  const stage=document.getElementById('battleStage');
+  const f2=document.getElementById('f2');
+  const hp2fill=document.getElementById('hp2');
+  const p2lv=document.getElementById('p2lv');
+  const roundBadge=document.getElementById('roundBadge');
+  if(isBoss){
+    stage.classList.add('boss-stage');document.getElementById('bossBg').classList.add('show');
+    f2.classList.add('boss-char');hp2fill.classList.add('boss');
+    p2lv.classList.add('boss-badge');p2lv.textContent='BOSS';roundBadge.classList.add('boss');
+  }else{
+    stage.classList.remove('boss-stage');document.getElementById('bossBg').classList.remove('show');
+    f2.classList.remove('boss-char');hp2fill.classList.remove('boss');
+    p2lv.classList.remove('boss-badge');p2lv.textContent=`Lv.${en.s+1}`;roundBadge.classList.remove('boss');
+  }
+  document.getElementById('explainBox').classList.remove('show');
+  updateWeaknessDots();updateUI();maybeSpawnEvent();nextQ();showScr('game');
+}
+
+function maybeSpawnEvent(){
+  G._qCount++;if(G._qCount%6!==0)return;
+  const ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  G.currentEvent={...ev};
+  const el=document.getElementById('eventNotice');
+  el.textContent=ev.text;el.className='event-notice show '+ev.type;
+  if(ev.heal){G.pHp=Math.min(G.pMaxHp,G.pHp+ev.heal);updateUI();}
+  setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// 問題生成
+function genQ(){
+  const en=G.currentEnemy;
+  const weakW=getMostWeakWord();
+  if(weakW&&Math.random()<0.3){
+    const wd=WORDS.find(w=>w.e===weakW);
+    if(wd)return buildQ(wd,en.qtype==='e2j'?'e2j':Math.random()<0.5?'e2j':'j2e');
+  }
+  const diffLevels=en.diff;
+  let pool=WORDS.filter(w=>diffLevels.includes(w.diff));
+  // スライム（stageIdx=0）は超簡単なe2jのみ
+  if(G.stageIdx===0) pool=WORDS.filter(w=>w.diff===1);
+  let candidates=pool.filter(w=>!G.usedWords.has(w.e));
+  if(candidates.length<4){G.usedWords=new Set();candidates=pool;}
+  const wd=candidates[Math.floor(Math.random()*candidates.length)];
+  G.usedWords.add(wd.e);
+  const qtype=en.qtype==='e2j'?'e2j':en.qtype==='j2e'?'j2e':Math.random()<0.5?'e2j':'j2e';
+  return buildQ(wd,qtype);
+}
+
+function buildQ(wd,qtype){
+  if(qtype==='e2j'){
+    // 英語→日本語（絵文字付き選択肢）
+    const correctObj={j:wd.j, emoji:wd.emoji||''};
+    const wrongObjs=getWrongJ(wd,3);
+    const choiceObjs=shuffle([correctObj,...wrongObjs]);
+    return {word:wd,qtype:'e2j',display:wd.e,correct:wd.j,choiceObjs,choices:choiceObjs.map(c=>c.j),diff:wd.diff};
+  }else{
+    // 日本語→英語
+    const correct=wd.e;
+    const wrongs=getWrongE(wd,3);
+    const choices=shuffle([correct,...wrongs]);
+    return {word:wd,qtype:'j2e',display:wd.j,correct,choices,diff:wd.diff};
+  }
+}
+
+function getWrongJ(wd,n){
+  const others=WORDS.filter(w=>w.e!==wd.e);
+  return shuffle(others).slice(0,n).map(w=>({j:w.j, emoji:w.emoji||''}));
+}
+function getWrongE(wd,n){
+  // 同レベル優先
+  const same=WORDS.filter(w=>w.e!==wd.e&&w.diff===wd.diff);
+  const pool=same.length>=3?same:WORDS.filter(w=>w.e!==wd.e);
+  return shuffle(pool).slice(0,n).map(w=>w.e);
+}
+function getMostWeakWord(){
+  let worst=null,worstRate=0.5;
+  Object.entries(G.weakWords).forEach(([k,s])=>{
+    const t=s.ok+s.ng;if(t<3)return;
+    const r=s.ng/t;if(r>worstRate){worstRate=r;worst=k;}
+  });
+  return worst;
+}
+function shuffle(arr){return[...arr].sort(()=>Math.random()-.5);}
+
+function nextQ(){
+  maybeSpawnEvent();G.q=genQ();G.locked=false;
+  document.getElementById('explainBox').classList.remove('show');
+  if(G.autoNext){G.autoNext=false;setTimeout(()=>autoCorrect(),650);return;}
+  renderQ(G.q);
+  document.getElementById('timeBonus').textContent='';
+  document.getElementById('comboTxt').style.display='none';
+  startTimer();
+}
+function autoCorrect(){showFB('⚡ Auto Correct！','#00ddff');doCorrect(true);}
+
+function renderQ(q){
+  const badge=document.getElementById('qTypeBadge');
+  const display=document.getElementById('wordDisplay');
+  const jpLead=document.getElementById('jpLead');
+  const hint=document.getElementById('wordHint');
+  const emojiHint=document.getElementById('emojiHint');
+  if(q.qtype==='e2j'){
+    badge.textContent='えいご → にほんご';badge.className='q-type-badge eng-to-jp';
+    display.textContent=q.display;display.style.display='block';
+    jpLead.classList.add('hidden');
+    hint.textContent=q.word.cat;
+    // 絵文字ヒント：diff1は大きく表示、diff2以上は小さめ
+    emojiHint.textContent=q.word.emoji||'';
+    emojiHint.style.fontSize=q.word.diff===1?'56px':'36px';
+    emojiHint.classList.remove('hidden');
+  }else{
+    badge.textContent='にほんご → えいご';badge.className='q-type-badge jp-to-eng';
+    display.textContent=q.display;display.style.display='block';
+    jpLead.classList.add('hidden');
+    hint.textContent=q.word.cat+'　（'+q.word.e.length+'もじ）';
+    // 日→英問題でも絵文字を出して意味の確認を助ける
+    emojiHint.textContent=q.word.emoji||'';
+    emojiHint.style.fontSize='44px';
+    emojiHint.classList.remove('hidden');
+  }
+  const area=document.getElementById('choicesArea');area.innerHTML='';
+  if(q.qtype==='e2j' && q.choiceObjs){
+    // 絵文字＋ひらがな
+    q.choiceObjs.forEach(obj=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn';
+      if(obj.emoji){
+        const em=document.createElement('span');em.className='choice-emoji';em.textContent=obj.emoji;
+        btn.appendChild(em);
+      }
+      const tx=document.createElement('span');tx.textContent=obj.j;btn.appendChild(tx);
+      btn.dataset.val=obj.j;
+      btn.ontouchend=(e)=>{e.preventDefault();answerChoice(obj.j);};
+      btn.onclick=()=>answerChoice(obj.j);
+      area.appendChild(btn);
+    });
+  }else{
+    q.choices.forEach(ch=>{
+      const btn=document.createElement('button');
+      btn.className='choice-btn'+(q.qtype==='j2e'?' eng':'');
+      btn.textContent=ch;
+      btn.ontouchend=(e)=>{e.preventDefault();answerChoice(ch);};
+      btn.onclick=()=>answerChoice(ch);
+      area.appendChild(btn);
+    });
+  }
+}
+
+function startTimer(){
+  clearTimer();G.timerLeft=G.timerMax;
+  document.getElementById('timerFill').style.width='100%';
+  document.getElementById('timerFill').style.background='linear-gradient(90deg,#44ffaa,#00ddff,#aa44ff)';
+  G.timerInterval=setInterval(()=>{
+    G.timerLeft=Math.max(0,G.timerLeft-.1);
+    const pct=G.timerLeft/G.timerMax;
+    document.getElementById('timerFill').style.width=(pct*100)+'%';
+    if(pct<.3)document.getElementById('timerFill').style.background='#ff2200';
+    else if(pct<.5)document.getElementById('timerFill').style.background='linear-gradient(90deg,#ff8800,#ff2200)';
+    if(G.timerLeft<=0){clearTimer();timeOut();}
+  },100);
+}
+function clearTimer(){if(G.timerInterval){clearInterval(G.timerInterval);G.timerInterval=null;}}
+function getTimerBonus(){
+  if(G.timerLeft>12)return{bonus:10,label:'⚡ Fast！ +10ダメ！'};
+  if(G.timerLeft>8)return{bonus:5,label:'✨ Quick！ +5ダメ！'};
+  return{bonus:0,label:''};
+}
+function timeOut(){
+  if(G.locked)return;G.locked=true;G.combo=0;
+  showFB('⏰ Time Out！','#ff8844');G.wrong++;recordResult(false);
+  highlightAnswer();
+  doAttack(2,1,10,false,()=>{G.pHp=Math.max(0,G.pHp-10);updateUI();showExplanation('timeout',G.q);});
+}
+function answerChoice(chosen){
+  if(G.locked)return;clearTimer();G.locked=true;
+  const ok=chosen===G.q.correct;recordResult(ok);
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    const bVal=b.dataset.val||b.textContent;
+    if(bVal===G.q.correct)b.classList.add('correct');
+    else if(bVal===chosen&&!ok)b.classList.add('wrong');
+    b.classList.add('disabled');
+  });
+  if(ok){G.correct++;doCorrect(false);}else{G.combo=0;G.wrong++;showFB('Wrong！💥','#ff3333');showWrong();}
+}
+function highlightAnswer(){
+  document.querySelectorAll('.choice-btn').forEach(b=>{
+    const bVal=b.dataset.val||b.textContent;
+    if(bVal===G.q.correct)b.classList.add('correct');
+    b.classList.add('disabled');
+  });
+}
+function recordResult(ok){
+  const k=G.q.word.e;
+  if(!G.weakWords[k])G.weakWords[k]={ok:0,ng:0};
+  if(ok)G.weakWords[k].ok++;else G.weakWords[k].ng++;
+  G.recentResults.push(ok?1:0);
+  if(G.recentResults.length>10)G.recentResults.shift();
+  updateWeaknessDots();
+}
+function updateWeaknessDots(){
+  const dots=document.getElementById('weaknessDots');dots.innerHTML='';
+  G.recentResults.forEach(r=>{
+    const d=document.createElement('div');d.className='wdot '+(r?'ok':'wrong');dots.appendChild(d);
+  });
+}
+
+function doCorrect(isAuto){
+  G.combo++;if(G.combo>G.maxCombo)G.maxCombo=G.combo;
+  if(G.combo>=2){
+    const ct=document.getElementById('comboTxt');
+    ct.textContent=G.combo>=6?`🌟${G.combo} Combo！！！`:G.combo>=4?`🔥${G.combo} Combo！`:`✨${G.combo} Combo！`;
+    ct.style.display='inline';ct.style.animation='none';void ct.offsetWidth;ct.style.animation='';
+  }
+  if(!isAuto)showFB('Correct！🎉','#00ff88');
+  const tb=getTimerBonus();
+  if(tb.bonus>0&&!isAuto)document.getElementById('timeBonus').textContent=tb.label;
+  const isSpecial=G.combo>0&&G.combo%3===0;
+  let dmg=Math.floor(G.pAtk*(1+G.q.diff*.3)*(isSpecial?2.2:1)*(1+G.combo*.04)
+    *(G.skillActive?2:1)*(G.critNext?4:1)*(G.currentEvent?.dmgMult||1))+tb.bonus;
+  G.critNext=false;G.currentEvent=null;
+  doAttack(1,2,dmg,isSpecial,()=>{
+    G.eHp=Math.max(0,G.eHp-dmg);
+    G.skillGauge=Math.min(G.skillMax,G.skillGauge+G.q.diff*15+5);
+    addExp(G.q.diff*(isSpecial?2:1));
+    updateUI();setTimeout(()=>afterQ(),isAuto?180:420);
+  });
+}
+function showWrong(){
+  showExplanation('wrong',G.q);
+  const penalty=G.currentEvent?.penalty||1;
+  const dmg=Math.floor(15*penalty);G.currentEvent=null;
+  doAttack(2,1,dmg,false,()=>{G.pHp=Math.max(0,G.pHp-dmg);updateUI();});
+}
+
+function showExplanation(reason,q){
+  document.getElementById('explainTitle').textContent=
+    reason==='timeout'?'⏰ Time Out！ かいせつ':'❌ まちがい！ かいせつ';
+  document.getElementById('exEmoji').textContent=q.word.emoji||'';
+  document.getElementById('exEng').textContent=q.word.e;
+  document.getElementById('exJp').textContent=q.word.j;
+  document.getElementById('exCat').textContent=q.word.cat;
+  document.getElementById('exReibun').textContent=q.word.ex;
+  let tip='';
+  if(q.qtype==='e2j'){
+    tip=`💡 "${q.word.e}" は「${q.word.j}」だよ！\n声に出してよんでみよう：「${q.word.e}」！`;
+  }else{
+    tip=`💡 「${q.word.j}」は英語で "${q.word.e}" だよ！\nアルファベットは ${q.word.e.length}もじ！`;
+  }
+  document.getElementById('explainTip').textContent=tip;
+  document.getElementById('explainBox').classList.add('show');
+  setTimeout(()=>document.getElementById('explainBox').scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+}
+function onExplainNext(){document.getElementById('explainBox').classList.remove('show');afterQ();}
+
+function useSkill(){
+  if(G.skillGauge<G.skillMax)return;
+  G.skillGauge=0;updateUI();
+  document.getElementById('skillBtn').className='n-skill n-btn btn';
+  document.getElementById('skillReadyBadge').style.display='none';
+  const sk=G.pChar.skillType;
+  showFB(G.pChar.skill+'！','#00ddff');
+  if(sk==='burst'){const dmg=G.pAtk*3;doAttack(1,2,dmg,true,()=>{G.eHp=Math.max(0,G.eHp-dmg);updateUI();setTimeout(()=>afterQ(),380);});G.locked=true;}
+  else if(sk==='combo'){G.combo=Math.max(G.combo,3);showEvent('⭐ Combo×3 Start！','bonus');}
+  else if(sk==='auto'){G.autoNext=true;clearTimer();nextQ();}
+  else if(sk==='percent'){const dmg=Math.floor(G.eHp*.3);doAttack(1,2,dmg,true,()=>{G.eHp=Math.max(0,G.eHp-dmg);updateUI();setTimeout(()=>afterQ(),380);});G.locked=true;}
+  else if(sk==='heal'){G.pHp=Math.min(G.pMaxHp,G.pHp+30);updateUI();showFB('💧 +30HP！','#00ff88');}
+  else if(sk==='crit'){G.critNext=true;showEvent('🗡️ Next×4！','bonus');}
+  else if(sk==='poison'){G.poisonActive=true;showEvent('🌀 Poison！まいもん5ダメ！','danger');}
+  else if(sk==='atkup'){
+    G.skillActive=true;G.skillTimer=10;showEvent('🐾 ATK×2！10びょう！','bonus');
+    const ti=setInterval(()=>{G.skillTimer--;if(G.skillTimer<=0){G.skillActive=false;clearInterval(ti);}},1000);
+  }
+  else if(sk==='shield'){G.shieldNext=true;showEv('❄️ つぎのこうげきを ブロック！');}
+  else if(sk==='zap'){const dmg=50;doAttack(1,2,dmg,true,()=>{G.eHp=Math.max(0,G.eHp-dmg);updateUI();setTimeout(()=>afterQ(),350);});G.locked=true;showFB('⚡ ライトニング！','#ffff44');}
+  else if(sk==='prism'){G.prismCount=5;showEv('🌈 スコア×1.5 （5もん）！');}
+  else if(sk==='lucky'){G.pHp=G.pMaxHp;G.skillGauge=G.skillMax;updateUI();showFB('🍀 ラッキー！','#00ff88');}
+  else if(sk==='nobreak'){G.nobreakCount=5;showEv('🦋 コンボ切れなし（5もん）！');}
+  else if(sk==='triple'){G.tripleNext=true;showEv('🐸 つぎのダメージ×3！');}
+  else if(sk==='half'){const dmg=Math.floor(G.eHp/2);doAttack(1,2,dmg,true,()=>{G.eHp=Math.max(0,G.eHp-dmg);updateUI();setTimeout(()=>afterQ(),350);});G.locked=true;showFB('🎯 ハーフショット！','#ff8800');}
+  else if(sk==='miracle'){G.pHp=G.pMaxHp;G.pAtk+=10;updateUI();writeSave();showFB('✨ ミラクル！','#ffaaff');}
+}
+function showEvent(text,type){
+  const el=document.getElementById('eventNotice');
+  el.textContent=text;el.className='event-notice show '+type;
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+function addExp(amt){
+  G.pExp+=amt;
+  while(G.pExp>=G.pExpNext){
+    G.pExp-=G.pExpNext;G.pLv++;G.pExpNext=Math.floor(G.pExpNext*1.45);
+    G.pMaxHp+=15;G.pHp=Math.min(G.pHp+20,G.pMaxHp);G.pAtk+=5;showLvUp();
+  }
+  writeSave();updateUI();
+}
+function showLvUp(){
+  const n=document.getElementById('lvupNotify');
+  const tip=TIPS[G.tipIdx%TIPS.length];G.tipIdx++;
+  document.getElementById('lvupDetail').innerHTML=
+    `Lv.<span style="color:var(--gold);font-size:16px;font-family:'Boogaloo',cursive;">${G.pLv}</span> になった！　ATK→<b>${G.pAtk}</b>　HP→<b>${G.pMaxHp}</b>`;
+  document.getElementById('tipsCard').textContent=tip;
+  n.classList.add('show');stageShake();setTimeout(()=>n.classList.remove('show'),3000);
+}
+
+function doAttack(atk,def,dmg,special,cb){
+  const fa=document.getElementById('f'+atk),fd=document.getElementById('f'+def);
+  fa.classList.remove('atk-r','atk-l','dmg-r','dmg-l');void fa.offsetWidth;
+  fa.classList.add(atk===1?'atk-r':'atk-l');
+  setTimeout(()=>{
+    fa.classList.remove('atk-r','atk-l');
+    spawnHitFx(def,special);spawnDmgNum(def,dmg,special);stageShake();
+    fd.classList.remove('dmg-r','dmg-l');void fd.offsetWidth;
+    fd.classList.add(def===1?'dmg-r':'dmg-l');
+    setTimeout(()=>{fd.classList.remove('dmg-r','dmg-l');cb();},320);
+  },250);
+  if(special){
+    setTimeout(()=>{
+      const stage=document.getElementById('battleStage');
+      const el=document.createElement('div');el.className='special-fx';
+      el.style.color=def===1?'#ff6644':'#ffd700';
+      el.textContent='💥 '+SPECIALS[Math.floor(Math.random()*SPECIALS.length)];
+      stage.appendChild(el);setTimeout(()=>el.remove(),620);
+    },95);
+  }
+}
+function spawnHitFx(t,sp){
+  const stage=document.getElementById('battleStage');
+  const el=document.createElement('div');el.className='hit-fx';
+  el.textContent=sp?'🌟':HIT_FX[Math.floor(Math.random()*HIT_FX.length)];
+  el.style.fontSize=sp?'42px':'30px';el.style.left=(t===1?'10':'56')+'%';el.style.top='13%';
+  stage.appendChild(el);setTimeout(()=>el.remove(),500);
+}
+function spawnDmgNum(t,dmg,sp){
+  const stage=document.getElementById('battleStage');
+  const el=document.createElement('div');el.className='dmg-num';
+  el.textContent=(sp?'★':'')+'−'+dmg;el.style.fontSize=sp?'23px':'17px';
+  el.style.color=t===2?(sp?'#ffd700':'#88ffcc'):'#ff7755';
+  el.style.left=(t===1?'6':'52')+'%';el.style.bottom='56%';
+  stage.appendChild(el);setTimeout(()=>el.remove(),900);
+}
+function stageShake(){
+  const el=document.getElementById('battleStage');
+  el.classList.remove('stage-shake');void el.offsetWidth;
+  el.classList.add('stage-shake');setTimeout(()=>el.classList.remove('stage-shake'),380);
+}
+function showFB(text,color){
+  const el=document.getElementById('fbTxt');
+  el.textContent=text;el.style.color=color;
+  el.classList.remove('show');void el.offsetWidth;
+  el.classList.add('show');setTimeout(()=>el.classList.remove('show'),840);
+}
+
+const ACHIEVEMENTS=[
+  {id:'combo5', label:'5 Combo！',      check:()=>G.maxCombo>=5},
+  {id:'combo10',label:'10 Combo！！！', check:()=>G.maxCombo>=10},
+  {id:'nodmg',  label:'ノーダメージ！', check:()=>G.wrong===0&&G.wins[0]>=2},
+  {id:'lv5',    label:'Lv.5 とうたつ！',check:()=>G.pLv>=5},
+  {id:'lv10',   label:'えいごマスター！',check:()=>G.pLv>=10},
+  {id:'boss',   label:'BOSSたおした！！',check:()=>G.stageIdx>=6},
+];
+function checkAchievements(){
+  ACHIEVEMENTS.forEach(a=>{
+    if(G.achievements.includes(a.id))return;
+    if(a.check()){
+      G.achievements.push(a.id);G.sessionAch.push(a.label);writeSave();
+      document.getElementById('achName').textContent='🏅 '+a.label;
+      const t=document.getElementById('achToast');
+      t.classList.remove('show');void t.offsetWidth;t.classList.add('show');
+      setTimeout(()=>t.classList.remove('show'),2200);
+    }
+  });
+}
+
+function afterQ(){
+  checkAchievements();writeSave();
+  if(G.pHp<=0||G.eHp<=0){
+    clearTimer();
+    const playerWon=G.eHp<=0;G.wins[playerWon?0:1]++;
+    if(!playerWon)G.winStreak=0;
+    document.getElementById('koWinner').textContent=playerWon?`${G.pChar.e} のかち！`:`${G.currentEnemy.e} のかち！`;
+    const ov=document.getElementById('koOverlay');ov.classList.add('show');
+    setTimeout(()=>{
+      ov.classList.remove('show');
+      if(G.wins[0]>=2||G.wins[1]>=2){
+        if(playerWon)onEnemyDefeated();else showResult(false);
+      }else{
+        G.round++;G.pHp=Math.min(G.pMaxHp,G.pHp+Math.floor(G.pMaxHp*.25));
+        G.eHp=G.eMaxHp;G.combo=0;
+        document.getElementById('explainBox').classList.remove('show');
+        updateUI();nextQ();
+      }
+    },1800);
+  }else{
+    if(G.poisonActive){G.eHp=Math.max(0,G.eHp-5);updateUI();}
+    nextQ();
+  }
+}
+function onEnemyDefeated(){
+  G.winStreak++;G.totalWins++;
+  const en=G.currentEnemy;
+  G.pHp=Math.min(G.pMaxHp,G.pHp+Math.floor(G.pMaxHp*.3));writeSave();
+  if(en.isBoss){G.stageIdx=6;writeSave();checkAchievements();showResult(true,true);return;}
+  showStageClear(en,()=>{G.stageIdx++;writeSave();startStage();});
+}
+function showStageClear(en,cb){
+  const sc=document.getElementById('stageClear');
+  document.getElementById('scEnemy').textContent=en.e;
+  document.getElementById('scTitle').textContent=`${en.n} を やっつけた！`;
+  document.getElementById('scSub').textContent=`Lv. ${G.pLv}　HP ＋かいふく！`;
+  const nextEn=STORY_ENEMIES[G.stageIdx+1];
+  const scRoute=document.getElementById('scRoute');
+  if(nextEn){
+    scRoute.innerHTML=`<span style="font-size:11px;color:rgba(255,255,255,.4);">つぎのてき：</span><span style="font-size:24px;">${nextEn.e}</span><span style="font-size:13px;font-weight:900;color:#ffdd88;"> ${nextEn.n}</span>`;
+    document.getElementById('scNext').textContent=nextEn.isBoss?'⚠️ BOSS が まっているぞ！':'Next Stage…';
+  }else{scRoute.innerHTML='';document.getElementById('scNext').textContent='';}
+  sc.classList.add('show');setTimeout(()=>{sc.classList.remove('show');cb();},2600);
+}
+
+function updateUI(){
+  document.getElementById('hp1').style.width=(G.pHp/G.pMaxHp*100)+'%';
+  document.getElementById('hp1t').textContent=`HP ${G.pHp}/${G.pMaxHp}`;
+  document.getElementById('hp2').style.width=(G.eHp/G.eMaxHp*100)+'%';
+  document.getElementById('hp2t').textContent=`HP ${G.eHp}/${G.eMaxHp}`;
+  document.getElementById('p1lv').textContent=`Lv.${G.pLv}`;
+  document.getElementById('exp1').style.width=(G.pExp/G.pExpNext*100)+'%';
+  document.getElementById('exp1t').textContent=`EXP ${G.pExp}/${G.pExpNext}`;
+  document.getElementById('roundBadge').textContent=`Round ${G.round}`;
+  document.getElementById('sc1').textContent='★'.repeat(G.wins[0])||'☆';
+  document.getElementById('sc2').textContent='★'.repeat(G.wins[1])||'☆';
+  document.getElementById('skillFill').style.width=(G.skillGauge/G.skillMax*100)+'%';
+  const ready=G.skillGauge>=G.skillMax;
+  document.getElementById('skillReadyBadge').style.display=ready?'inline':'none';
+  const sb=document.getElementById('streakBadge');
+  if(G.winStreak>=3){sb.textContent=`🔥${G.winStreak}れんしょう！`;sb.classList.add('show');}else sb.classList.remove('show');
+  document.getElementById('hp1').style.filter=G.pHp/G.pMaxHp<.25?'brightness(1.7) saturate(2)':'';
+}
+
+function showResult(playerWon,isAllClear=false){
+  showScr('result');
+  document.getElementById('winEmoji').textContent=playerWon?G.pChar.e:G.currentEnemy.e;
+  document.getElementById('winText').textContent=playerWon?'🏆 WIN！':'💀 まけた…';
+  document.getElementById('winSub').textContent=playerWon
+    ?(isAllClear?'えいごマスター！ ALL CLEAR！！':'つぎのてきへ！レベルはつづく！')
+    :'レベルはのこる！もう一度ちょうせん！';
+  const acb=document.getElementById('allclearBanner');
+  if(isAllClear){
+    acb.style.display='block';
+    document.getElementById('allclearSub').textContent=
+      `${G.pChar.e} ${G.pChar.n}　Lv.${G.pLv}\nBOSSをたおした！えいごマスター！`;
+  }else acb.style.display='none';
+  document.getElementById('rLv').textContent='Lv.'+G.pLv;
+  document.getElementById('rOk').textContent=G.correct+'もん';
+  document.getElementById('rNg').textContent=G.wrong+'もん';
+  document.getElementById('rCombo').textContent=G.maxCombo+'コンボ';
+  const wsEl=document.getElementById('wsItems');wsEl.innerHTML='';
+  let hasWeak=false;
+  const sorted=Object.entries(G.weakWords)
+    .filter(([,s])=>s.ok+s.ng>=2)
+    .sort(([,a],[,b])=>(b.ng/(b.ok+b.ng))-(a.ng/(a.ok+a.ng))).slice(0,8);
+  sorted.forEach(([k,s])=>{
+    hasWeak=true;const t=s.ok+s.ng,r=Math.floor(s.ok/t*100);
+    const wd=WORDS.find(w=>w.e===k);
+    const emoji=r>=80?'⭐':r>=60?'👍':r>=40?'💪':'🔥';
+    wsEl.innerHTML+=`<div class="ws-item">${emoji} <b style="font-family:'Boogaloo',cursive;font-size:14px;">${k}</b>（${wd?.j||''}）<span class="ws-pct">${s.ok}/${t}(${r}%)</span></div>`;
+  });
+  document.getElementById('weaknessSummary').style.display=hasWeak?'block':'none';
+  if(G.sessionAch.length>0){
+    document.getElementById('achList').style.display='block';
+    document.getElementById('achBadges').innerHTML=G.sessionAch.map(a=>`<span class="ach-badge">🏅 ${a}</span>`).join('');
+  }else document.getElementById('achList').style.display='none';
+}
+function toSelect(){if(G.stageIdx>=6){G.stageIdx=0;writeSave();}showSelect();}
+
+showScr('title');
+</script>
+</body>
+</html>

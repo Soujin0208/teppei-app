@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>がくしゅうバトル！</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070e;--gold:#ffd700;
+  --calc:#ff8844;--eng:#44ffaa;--kanji:#88ddff;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;
+  min-height:100%;overflow-x:hidden;}
+
+/* 星 */
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle 2s infinite alternate;}
+@keyframes twinkle{from{opacity:.1}to{opacity:.9}}
+.bg-ground{position:fixed;bottom:0;left:0;right:0;height:44px;
+  background:linear-gradient(180deg,#0a0a1a,#060610);
+  border-top:2px solid #22224a;z-index:1;pointer-events:none;}
+
+/* メインラッパー */
+#app{position:relative;z-index:10;min-height:100svh;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px 16px 56px;gap:20px;}
+
+/* ロゴ */
+.logo-wrap{text-align:center;}
+.logo-icon{font-size:56px;animation:bounce 1.2s ease-in-out infinite alternate;
+  display:block;margin-bottom:4px;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}
+.logo-title{font-family:'Boogaloo',cursive;font-size:clamp(32px,10vw,54px);
+  background:linear-gradient(135deg,var(--calc),var(--gold),var(--eng),var(--kanji));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 16px rgba(255,200,100,.5));
+  animation:titleGlow 2.5s ease-in-out infinite;line-height:1.1;}
+@keyframes titleGlow{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(255,180,80,.4))}
+  33%{filter:drop-shadow(0 0 22px rgba(68,255,170,.6))}
+  66%{filter:drop-shadow(0 0 18px rgba(136,200,255,.7))}}
+.logo-sub{font-size:12px;color:rgba(255,255,255,.4);font-weight:700;margin-top:5px;line-height:1.8;}
+
+/* セーブ表示エリア */
+.save-strip{width:100%;max-width:380px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.save-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:6px 8px;text-align:center;font-size:10px;
+  font-weight:700;color:rgba(255,255,255,.45);line-height:1.7;}
+.save-chip.has-data{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);
+  color:rgba(255,255,255,.75);}
+.save-chip .chip-lv{font-size:13px;font-weight:900;}
+
+/* ゲームカード */
+.cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:380px;}
+.game-card{
+  border-radius:18px;padding:18px 20px;cursor:pointer;
+  display:flex;align-items:center;gap:16px;
+  position:relative;overflow:hidden;
+  transition:transform .12s,box-shadow .15s;
+  -webkit-user-select:none;user-select:none;
+  border:2px solid transparent;
+}
+.game-card:active{transform:scale(.96);}
+.game-card.calc{
+  background:linear-gradient(135deg,rgba(255,120,40,.12),rgba(255,60,0,.06));
+  border-color:rgba(255,120,40,.3);
+}
+.game-card.eng{
+  background:linear-gradient(135deg,rgba(68,255,170,.1),rgba(0,200,120,.05));
+  border-color:rgba(68,255,170,.28);
+}
+.game-card.kanji{
+  background:linear-gradient(135deg,rgba(100,180,255,.1),rgba(60,100,255,.05));
+  border-color:rgba(100,180,255,.28);
+}
+.game-card.calc:hover{box-shadow:0 0 22px rgba(255,120,40,.3);}
+.game-card.eng:hover{box-shadow:0 0 22px rgba(68,255,170,.3);}
+.game-card.kanji:hover{box-shadow:0 0 22px rgba(100,180,255,.3);}
+
+/* カード内の輝き */
+.card-glow{position:absolute;inset:0;pointer-events:none;opacity:0;
+  transition:opacity .2s;}
+.game-card:active .card-glow{opacity:1;}
+.calc .card-glow{background:radial-gradient(ellipse at 50% 50%,rgba(255,140,60,.2),transparent 70%);}
+.eng .card-glow{background:radial-gradient(ellipse at 50% 50%,rgba(68,255,170,.2),transparent 70%);}
+.kanji .card-glow{background:radial-gradient(ellipse at 50% 50%,rgba(100,180,255,.2),transparent 70%);}
+
+.card-icon{font-size:48px;flex-shrink:0;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));
+  animation:cardIcon 2s ease-in-out infinite alternate;}
+@keyframes cardIcon{from{transform:scale(1)}to{transform:scale(1.08)}}
+.game-card:nth-child(2) .card-icon{animation-delay:.4s;}
+.game-card:nth-child(3) .card-icon{animation-delay:.8s;}
+
+.card-body{flex:1;text-align:left;}
+.card-title{font-family:'Boogaloo',cursive;font-size:clamp(22px,7vw,30px);
+  font-weight:900;color:#fff;line-height:1;letter-spacing:1px;}
+.card-title.calc{color:var(--calc);text-shadow:0 0 12px rgba(255,140,60,.5);}
+.card-title.eng{color:var(--eng);text-shadow:0 0 12px rgba(68,255,170,.5);}
+.card-title.kanji{color:var(--kanji);text-shadow:0 0 12px rgba(100,200,255,.5);}
+.card-desc{font-size:11px;color:rgba(255,255,255,.55);font-weight:700;
+  margin-top:4px;line-height:1.7;}
+.card-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap;}
+.tag{font-size:9px;font-weight:900;padding:2px 7px;border-radius:9px;}
+.tag.calc{background:rgba(255,120,40,.14);border:1px solid rgba(255,120,40,.3);color:var(--calc);}
+.tag.eng{background:rgba(68,255,170,.12);border:1px solid rgba(68,255,170,.28);color:var(--eng);}
+.tag.kanji{background:rgba(100,180,255,.12);border:1px solid rgba(100,180,255,.28);color:var(--kanji);}
+.card-arrow{font-size:20px;color:rgba(255,255,255,.25);flex-shrink:0;}
+
+/* NEW バッジ */
+.new-badge{position:absolute;top:10px;right:12px;
+  background:linear-gradient(135deg,#ff2266,#ff8800);
+  color:#fff;font-size:9px;font-weight:900;padding:2px 7px;
+  border-radius:9px;letter-spacing:1px;
+  animation:newBadge .8s ease-in-out infinite alternate;}
+@keyframes newBadge{from{box-shadow:0 0 6px rgba(255,50,100,.6)}
+  to{box-shadow:0 0 16px rgba(255,100,0,.9)}}
+
+/* フッター */
+.footer{font-size:10px;color:rgba(255,255,255,.2);font-weight:700;text-align:center;}
+
+/* ========== 小画面対応（iPhone 15: 390px / SE: 375px） ========== */
+@media (max-width:410px){
+  #app{padding:18px 12px 44px;gap:16px;}
+  .logo-icon{font-size:46px;}
+  .logo-sub{font-size:11px;line-height:1.7;}
+  .save-strip{gap:6px;}
+  .save-chip{font-size:9px;padding:5px 6px;}
+  .save-chip .chip-lv{font-size:12px;}
+  .cards{gap:10px;}
+  .game-card{padding:14px 14px;gap:12px;border-radius:16px;}
+  .card-icon{font-size:38px;}
+  .card-desc{font-size:10px;line-height:1.6;}
+  .card-tags{gap:4px;margin-top:5px;}
+  .tag{font-size:8px;padding:1px 6px;}
+  .card-arrow{font-size:17px;}
+  .new-badge{font-size:8px;padding:1px 6px;top:8px;right:10px;}
+  .footer{font-size:9px;}
+}
+
+@media (max-width:380px){
+  .logo-icon{font-size:40px;}
+  .card-icon{font-size:34px;}
+  .game-card{padding:12px 12px;gap:10px;}
+  .card-desc{font-size:9px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-stars" id="stars"></div>
+<div class="bg-ground"></div>
+
+<div id="app">
+
+  <!-- ロゴ -->
+  <div class="logo-wrap">
+    <span class="logo-icon">🎮</span>
+    <div class="logo-title">がくしゅう<br>バトル！</div>
+    <div class="logo-sub">すきなもんだいをえらんで　たたかおう！<br>レベルはそれぞれべつにのこるよ ⚔️✨</div>
+  </div>
+
+  <!-- セーブ状況 -->
+  <div class="save-strip" id="saveStrip">
+    <div class="save-chip" id="saveCalc">🔢<br><span class="chip-lv">---</span><br>けいさん</div>
+    <div class="save-chip" id="saveEng">🌍<br><span class="chip-lv">---</span><br>えいご</div>
+    <div class="save-chip" id="saveKanji">📖<br><span class="chip-lv">---</span><br>かんじ</div>
+  </div>
+
+  <!-- ゲームカード -->
+  <div class="cards">
+
+    <div class="game-card calc" onclick="go('calc-battle.html')">
+      <div class="card-glow"></div>
+      <div class="card-icon">🔢</div>
+      <div class="card-body">
+        <div class="card-title calc">けいさんバトル！</div>
+        <div class="card-desc">たし算・ひき算・かけ算・わり算で<br>てきをやっつけろ！</div>
+        <div class="card-tags">
+          <span class="tag calc">小1〜3</span>
+          <span class="tag calc">繰り上がり解説</span>
+          <span class="tag calc">ストーリー</span>
+        </div>
+      </div>
+      <div class="card-arrow">▶</div>
+    </div>
+
+    <div class="game-card eng" onclick="go('english-battle.html')">
+      <div class="card-glow"></div>
+      <div class="new-badge">NEW！</div>
+      <div class="card-icon">🌍</div>
+      <div class="card-body">
+        <div class="card-title eng">English Battle！</div>
+        <div class="card-desc">英単語→日本語・日本語→英単語<br>の2しゅるいでたたかう！</div>
+        <div class="card-tags">
+          <span class="tag eng">小1〜4</span>
+          <span class="tag eng">英語→日本語</span>
+          <span class="tag eng">日本語→英語</span>
+        </div>
+      </div>
+      <div class="card-arrow">▶</div>
+    </div>
+
+    <div class="game-card kanji" onclick="go('kanji-battle.html')">
+      <div class="card-glow"></div>
+      <div class="new-badge">NEW！</div>
+      <div class="card-icon">📖</div>
+      <div class="card-body">
+        <div class="card-title kanji">かんじバトル！</div>
+        <div class="card-desc">読み方・意味から漢字をえらぼう！<br>1・2年生の漢字が全部でるよ！</div>
+        <div class="card-tags">
+          <span class="tag kanji">小1・2年</span>
+          <span class="tag kanji">読み方</span>
+          <span class="tag kanji">意味から選ぶ</span>
+        </div>
+      </div>
+      <div class="card-arrow">▶</div>
+    </div>
+
+  </div>
+
+  <div class="footer">🎮 がくしゅうバトル　全3しゅるい<br>まい日すこしずつ　つよくなろう！</div>
+
+</div>
+
+<script>
+// 星生成
+(()=>{
+  const c=document.getElementById('stars');
+  for(let i=0;i<70;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2.2+.6;
+    s.style.cssText=`width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;`+
+      `animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2.5}s`;
+    c.appendChild(s);
+  }
+})();
+
+// セーブデータ読み込んでレベル表示
+(()=>{
+  const saves=[
+    {key:'calcBattle_v1',  elId:'saveCalc'},
+    {key:'engBattle_v1',   elId:'saveEng'},
+    {key:'kanjiBattle_v1', elId:'saveKanji'},
+  ];
+  saves.forEach(({key,elId})=>{
+    try{
+      const d=JSON.parse(localStorage.getItem(key));
+      if(d?.pLv){
+        const el=document.getElementById(elId);
+        el.classList.add('has-data');
+        el.querySelector('.chip-lv').textContent='Lv.'+d.pLv;
+      }
+    }catch{}
+  });
+})();
+
+// ゲームへ遷移
+function go(page){
+  // タップ演出
+  document.querySelectorAll('.game-card').forEach(c=>c.style.pointerEvents='none');
+  setTimeout(()=>{ window.location.href=page; },120);
+}
+</script>
+</body>
+</html>
