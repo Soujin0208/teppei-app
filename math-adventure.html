@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>さんすうアドベンチャー！</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Noto+Sans+JP:wght@700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070e;--gold:#ffd700;--correct:#00ff88;--wrong:#ff3333;
+  --purple:#cc44ff;--cyan:#00ddff;--orange:#ff8844;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%;overflow:hidden;}
+
+.bg-stars{position:fixed;inset:0;pointer-events:none;z-index:0;}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle 2s infinite alternate;}
+@keyframes twinkle{from{opacity:.1}to{opacity:.8}}
+.bg-ground{position:fixed;bottom:0;left:0;right:0;height:50px;
+  background:linear-gradient(180deg,#14093a,#0b0720);border-top:2px solid #3838aa;z-index:1;pointer-events:none;}
+
+#app{position:fixed;inset:0;z-index:10;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;display:flex;flex-direction:column;align-items:center;}
+
+/* ========== タイトル ========== */
+#screen-title{min-height:100svh;width:100%;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px 16px 50px;}
+.title-logo{font-family:'Boogaloo',cursive;font-size:clamp(34px,11vw,60px);
+  background:linear-gradient(135deg,#ffd700,#ff6600,#ff0044,#cc44ff);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 18px rgba(255,150,0,.9));animation:logoPulse 2s ease-in-out infinite;line-height:1.1;}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(255,150,0,.7))}
+  50%{filter:drop-shadow(0 0 30px rgba(255,210,0,1))}}
+.title-icon{font-size:60px;animation:bounce 1.1s ease-in-out infinite alternate;}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.title-sub{color:#aaaaff;font-size:12px;font-weight:700;line-height:1.9;}
+.save-info{background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
+  border-radius:11px;padding:10px 16px;color:var(--gold);font-size:12px;font-weight:700;line-height:1.7;}
+.save-clear-btn{font-size:10px;color:rgba(255,100,100,.5);cursor:pointer;
+  text-decoration:underline;background:none;border:none;margin-top:2px;}
+
+/* ========== 学年選択 ========== */
+#screen-grade{min-height:100svh;width:100%;max-width:430px;
+  display:flex;flex-direction:column;align-items:center;padding:22px 12px 50px;gap:12px;}
+.screen-title{color:var(--gold);font-size:18px;font-weight:900;text-align:center;}
+.screen-back{font-size:11px;color:rgba(255,255,255,.4);cursor:pointer;
+  background:none;border:none;text-decoration:underline;align-self:flex-start;margin-left:4px;}
+.grade-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:100%;}
+.grade-card{border-radius:13px;padding:13px 10px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  border:2px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.03);transition:transform .1s,box-shadow .15s;
+  -webkit-user-select:none;user-select:none;position:relative;}
+.grade-card:active{transform:scale(.94);}
+.grade-card.unlocked{border-color:rgba(255,215,0,.22);background:rgba(255,215,0,.04);}
+.grade-card.unlocked:hover{box-shadow:0 0 20px rgba(255,215,0,.2);}
+.grade-card.locked{opacity:.45;cursor:default;}
+.grade-card.current{border-color:var(--orange);box-shadow:0 0 18px rgba(255,136,68,.4);}
+.grade-emoji{font-size:36px;}
+.grade-name{font-size:13px;font-weight:900;color:#fff;}
+.grade-prog{font-size:10px;color:rgba(255,255,255,.45);font-weight:700;}
+.grade-lock-icon{font-size:18px;position:absolute;top:8px;right:10px;opacity:.5;}
+.grade-complete-badge{position:absolute;top:6px;right:8px;font-size:9px;font-weight:900;
+  background:linear-gradient(135deg,var(--gold),#ff8800);color:#000;
+  padding:2px 6px;border-radius:8px;}
+
+/* ========== 単元選択 ========== */
+#screen-unit{min-height:100svh;width:100%;max-width:430px;
+  display:flex;flex-direction:column;align-items:center;padding:22px 12px 50px;gap:10px;}
+.unit-list{display:flex;flex-direction:column;gap:8px;width:100%;}
+.unit-card{border-radius:11px;padding:12px 14px;cursor:pointer;
+  display:flex;align-items:center;gap:12px;
+  border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);
+  transition:transform .1s;-webkit-user-select:none;user-select:none;position:relative;}
+.unit-card:active{transform:scale(.96);}
+.unit-card.unlocked{border-color:rgba(255,215,0,.2);background:rgba(255,215,0,.04);}
+.unit-card.cleared{border-color:rgba(0,255,136,.22);background:rgba(0,255,136,.04);}
+.unit-card.locked{opacity:.4;cursor:default;}
+.unit-card.active-unit{border-color:var(--orange);box-shadow:0 0 14px rgba(255,136,68,.35);}
+.unit-enemy{font-size:34px;flex-shrink:0;}
+.unit-body{flex:1;}
+.unit-name{font-size:13px;font-weight:900;color:#fff;}
+.unit-detail{font-size:10px;color:rgba(255,255,255,.45);font-weight:700;margin-top:2px;}
+.unit-status{font-size:20px;flex-shrink:0;}
+
+/* ========== キャラ選択 ========== */
+#screen-char{min-height:100svh;width:100%;max-width:430px;
+  display:flex;flex-direction:column;align-items:center;padding:18px 12px 50px;gap:10px;}
+.char-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;width:100%;}
+.char-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);
+  border-radius:9px;padding:6px 3px;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;}
+.char-card.selected{border-color:var(--gold);background:rgba(255,215,0,.1);
+  box-shadow:0 0 13px rgba(255,215,0,.4);transform:scale(1.05);}
+.char-emoji{font-size:28px;position:relative;display:inline-block;}
+.char-name{color:#fff;font-size:9px;font-weight:700;}
+.char-lv{font-size:8px;color:var(--gold);font-weight:900;}
+.evo-badge{position:absolute;top:-2px;right:-2px;font-size:9px;}
+.char-preview{width:100%;background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.16);
+  border-radius:10px;padding:10px 12px;display:none;text-align:center;}
+.char-preview.show{display:block;}
+.preview-name{font-size:16px;font-weight:900;color:var(--gold);}
+.preview-evo{font-size:11px;color:var(--cyan);font-weight:700;margin-top:2px;}
+.preview-stats{font-size:11px;color:rgba(255,255,255,.55);margin-top:4px;line-height:1.8;}
+
+/* ========== ゲーム ========== */
+#screen-game{width:100%;max-width:430px;display:flex;flex-direction:column;
+  align-items:center;padding:7px 11px 28px;gap:5px;}
+
+.unit-header{width:100%;display:flex;justify-content:space-between;align-items:center;}
+.unit-badge{font-size:9px;font-weight:900;color:var(--orange);
+  background:rgba(255,136,68,.1);border:1px solid rgba(255,136,68,.25);
+  padding:2px 8px;border-radius:9px;}
+.diff-badge{font-size:9px;font-weight:900;color:var(--cyan);
+  background:rgba(0,221,255,.08);border:1px solid rgba(0,221,255,.2);
+  padding:2px 8px;border-radius:9px;}
+
+/* ステータス */
+.status-row{display:flex;gap:5px;align-items:flex-start;width:100%;}
+.status-block{flex:1;display:flex;flex-direction:column;gap:2px;}
+.status-block.right{align-items:flex-end;}
+.fighter-label{font-size:10px;font-weight:900;color:#fff;display:flex;align-items:center;gap:3px;}
+.lv-badge{font-size:8px;font-weight:900;padding:1px 4px;border-radius:6px;
+  background:rgba(255,215,0,.14);border:1px solid rgba(255,215,0,.35);color:var(--gold);}
+.enemy-badge{background:rgba(255,34,102,.18);border-color:rgba(255,34,102,.5);color:#ff6688;}
+.hp-track{width:100%;height:11px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+.hp-fill{height:100%;border-radius:6px;transition:width .4s cubic-bezier(.4,0,.2,1);}
+.hp-fill.p1{background:linear-gradient(90deg,#ff2200,#ff8844);}
+.hp-fill.p2{background:linear-gradient(270deg,#1a44ff,#22ddff);}
+.hp-text{font-size:8px;color:rgba(255,255,255,.45);font-weight:700;}
+.exp-track{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+.exp-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#aa44ff,#ff44ff);transition:width .35s;}
+.exp-text{font-size:8px;color:rgba(175,95,255,.65);font-weight:700;}
+.vs-badge{font-size:13px;font-weight:900;color:var(--gold);font-family:'Boogaloo',cursive;flex-shrink:0;}
+
+/* バトルステージ */
+.battle-stage{position:relative;width:100%;height:88px;
+  background:linear-gradient(180deg,rgba(5,5,14,.9),rgba(13,4,30,.95));
+  border-radius:11px;border:1px solid rgba(60,60,130,.22);
+  overflow:hidden;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 12px 5px;flex-shrink:0;}
+.stage-grid{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px);
+  background-size:16px 16px;pointer-events:none;}
+.stage-floor{position:absolute;bottom:0;left:0;right:0;height:15px;
+  border-top:1.5px solid rgba(60,60,160,.25);}
+
+.fighter{font-size:42px;position:relative;z-index:2;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6));}
+.fighter.p1{animation:idleL 2.2s ease-in-out infinite;}
+.fighter.p2{animation:idleR 2.2s ease-in-out infinite;transform:scaleX(-1);}
+@keyframes idleL{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes idleR{0%,100%{transform:translateY(0) scaleX(-1)}50%{transform:translateY(-4px) scaleX(-1)}}
+.fighter.atk{animation:atkR .3s ease-out forwards!important;}
+.fighter.dmg{animation:dmgR .42s ease-out!important;}
+@keyframes atkR{0%{transform:translateX(0)}45%{transform:translateX(44px) translateY(-13px) scale(1.3)}100%{transform:translateX(0)}}
+@keyframes dmgR{0%{transform:translateX(0)}25%{transform:translateX(22px) rotate(18deg) scale(1.2)}100%{transform:translateX(0) rotate(0)}}
+
+/* エボリューション演出 */
+.fighter.evo1{filter:drop-shadow(0 0 8px #00ddff) drop-shadow(0 3px 5px rgba(0,0,0,.6));}
+.fighter.evo2{filter:drop-shadow(0 0 14px #ffd700) drop-shadow(0 0 6px #cc44ff) drop-shadow(0 3px 5px rgba(0,0,0,.6));
+  animation:idleL 1.6s ease-in-out infinite;}
+
+.hit-fx{position:absolute;z-index:20;pointer-events:none;animation:hitFx .45s ease-out forwards;}
+@keyframes hitFx{0%{opacity:1;transform:scale(.5)}40%{opacity:1;transform:scale(1.4)}100%{opacity:0;transform:scale(1.8)}}
+.dmg-num{position:absolute;z-index:25;pointer-events:none;
+  font-family:'Boogaloo',cursive;font-weight:900;font-size:20px;
+  animation:dmgNum .9s ease-out forwards;text-shadow:0 2px 4px rgba(0,0,0,.9);}
+@keyframes dmgNum{0%{opacity:1;transform:translateY(0) scale(1)}
+  20%{transform:translateY(-8px) scale(1.3)}100%{opacity:0;transform:translateY(-48px) scale(.7)}}
+@keyframes stageShake{0%,100%{transform:translate(0)}15%{transform:translate(-5px,2px)}
+  30%{transform:translate(5px,-2px)}60%{transform:translate(-3px,2px)}80%{transform:translate(3px,-2px)}}
+.stage-shake{animation:stageShake .35s ease-out!important;}
+
+/* コンボ */
+.combo-zone{width:100%;text-align:center;height:18px;flex-shrink:0;}
+.combo-txt{font-size:14px;font-weight:900;font-family:'Boogaloo',cursive;color:var(--gold);
+  display:none;animation:comboPop .26s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes comboPop{from{transform:scale(.3)}to{transform:scale(1)}}
+
+/* 問題カード */
+.q-card{width:100%;background:linear-gradient(135deg,rgba(255,255,255,.048),rgba(255,255,255,.012));
+  border:2px solid rgba(255,255,255,.08);border-radius:13px;
+  padding:9px 12px 8px;text-align:center;position:relative;overflow:hidden;flex-shrink:0;}
+.q-timer{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.q-timer-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#00ff88,#ffd700,#ff3300);transition:width .1s linear;}
+.q-label{font-size:9px;color:rgba(255,255,255,.28);font-weight:700;letter-spacing:2px;margin-bottom:2px;}
+.q-text{font-size:clamp(22px,7vw,38px);font-weight:900;font-family:'Boogaloo',cursive;
+  color:#ffaa88;letter-spacing:2px;line-height:1.15;text-shadow:0 0 12px rgba(255,80,0,.35);}
+.q-hint{font-size:10px;color:rgba(255,255,255,.3);font-weight:700;margin-top:2px;min-height:14px;}
+.q-count{font-size:10px;color:rgba(255,255,255,.35);font-weight:700;margin-top:2px;}
+
+/* 解説ボックス */
+.explain-box{width:100%;
+  background:linear-gradient(135deg,rgba(0,160,100,.1),rgba(0,80,180,.07));
+  border:2px solid rgba(0,200,140,.32);border-radius:13px;
+  padding:11px 12px;display:none;
+  animation:explainIn .32s cubic-bezier(.34,1.1,.64,1);}
+@keyframes explainIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.explain-box.show{display:block;}
+.explain-title{font-size:11px;color:var(--correct);font-weight:900;margin-bottom:5px;}
+.explain-content{font-size:12px;color:#fff;font-weight:700;line-height:1.8;white-space:pre-wrap;}
+.explain-next-btn{display:block;width:100%;margin-top:11px;
+  background:linear-gradient(135deg,#ffd700,#ff8800);color:#180000;
+  font-size:15px;font-weight:900;border:none;border-radius:12px;padding:13px 0;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  box-shadow:0 0 16px rgba(255,180,0,.45);animation:nextBtnPulse 1.4s ease-in-out infinite;
+  -webkit-user-select:none;user-select:none;letter-spacing:1px;}
+.explain-next-btn:active{transform:scale(.93);}
+@keyframes nextBtnPulse{0%,100%{box-shadow:0 0 10px rgba(255,180,0,.38)}
+  50%{box-shadow:0 0 24px rgba(255,220,0,.88)}}
+
+/* テンキー */
+.numpad-wrap{width:100%;padding-bottom:5px;}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.num-disp{grid-column:span 3;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.08);
+  border-radius:9px;padding:7px 11px;font-size:23px;font-weight:900;color:#fff;
+  text-align:right;min-height:43px;font-family:'Boogaloo',cursive;letter-spacing:2px;}
+.num-disp.empty{color:rgba(255,255,255,.16);}
+.n-btn{background:linear-gradient(145deg,rgba(44,46,98,.9),rgba(26,26,62,.95));
+  border:1px solid rgba(255,255,255,.07);color:#fff;font-size:20px;font-weight:900;
+  padding:0;height:46px;border-radius:9px;cursor:pointer;font-family:'Boogaloo',cursive;
+  transition:transform .07s,filter .07s;-webkit-user-select:none;user-select:none;
+  display:flex;align-items:center;justify-content:center;}
+.n-btn:active{transform:scale(.87);filter:brightness(1.4);}
+.n-del{background:linear-gradient(145deg,rgba(78,20,20,.9),rgba(50,8,8,.95));}
+.n-dot{background:linear-gradient(145deg,rgba(20,50,80,.9),rgba(10,30,60,.95));font-size:16px;}
+.n-ok{grid-column:span 2;background:linear-gradient(135deg,#ff5500,#ff1100);
+  font-size:15px;letter-spacing:1px;box-shadow:0 0 13px rgba(255,50,0,.35);height:46px;}
+
+/* フィードバック */
+.fb-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;z-index:150;}
+.fb-txt{font-size:52px;font-family:'Boogaloo',cursive;font-weight:900;opacity:0;
+  text-shadow:0 0 24px currentColor;}
+.fb-txt.show{opacity:1;animation:fbA .8s ease-out forwards;}
+@keyframes fbA{0%{opacity:1;transform:scale(.3) rotate(-10deg)}
+  25%{transform:scale(1.3) rotate(4deg)}70%{opacity:1;transform:scale(1.05)}100%{opacity:0;transform:scale(1.4)}}
+
+/* レベルアップ */
+.lvup-notify{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:300;
+  flex-direction:column;align-items:center;gap:7px;
+  background:rgba(6,6,20,.95);border:2px solid var(--gold);border-radius:16px;
+  padding:16px 24px;box-shadow:0 0 35px rgba(255,215,0,.5);pointer-events:none;
+  min-width:210px;text-align:center;}
+.lvup-notify.show{display:flex;animation:lvupAnim .38s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes lvupAnim{from{transform:translate(-50%,-50%) scale(.28)}to{transform:translate(-50%,-50%) scale(1)}}
+.lvup-title{font-size:22px;font-family:'Boogaloo',cursive;color:var(--gold);text-shadow:0 0 14px rgba(255,215,0,1);}
+.lvup-evo{font-size:36px;}
+.lvup-detail{font-size:12px;color:#fff;font-weight:700;line-height:1.8;}
+
+/* 進化演出 */
+.evo-notify{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:310;
+  flex-direction:column;align-items:center;gap:8px;
+  background:rgba(6,6,20,.97);border:2px solid var(--cyan);border-radius:16px;
+  padding:18px 26px;box-shadow:0 0 40px rgba(0,221,255,.6);pointer-events:none;
+  min-width:220px;text-align:center;}
+.evo-notify.show{display:flex;animation:evoAnim .5s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes evoAnim{from{transform:translate(-50%,-50%) scale(.1) rotate(-20deg)}to{transform:translate(-50%,-50%) scale(1) rotate(0)}}
+.evo-title{font-size:13px;color:var(--cyan);font-weight:900;letter-spacing:2px;}
+.evo-char{font-size:56px;animation:evoPulse 1s ease-in-out infinite alternate;}
+@keyframes evoPulse{from{transform:scale(1)}to{transform:scale(1.15)}}
+.evo-name{font-size:20px;font-weight:900;color:#fff;}
+.evo-sub{font-size:11px;color:var(--gold);font-weight:700;}
+
+/* ========== ユニットクリア ========== */
+.unit-clear{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:450;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.unit-clear.show{display:flex;}
+.uc-enemy{font-size:68px;animation:ucEnemy .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes ucEnemy{from{transform:scale(0)}to{transform:scale(1)}}
+.uc-title{font-family:'Boogaloo',cursive;font-size:36px;color:var(--gold);
+  text-shadow:0 0 20px rgba(255,215,0,.8);animation:ucSlide .4s .2s ease-out both;}
+@keyframes ucSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.uc-sub{font-size:13px;color:#fff;font-weight:700;animation:ucSlide .4s .35s ease-out both;}
+.uc-exp{font-size:14px;color:var(--purple);font-weight:900;animation:ucSlide .4s .45s ease-out both;}
+.uc-next-btn{margin-top:8px;background:linear-gradient(135deg,#ffd700,#ff8800);color:#170000;
+  font-size:17px;font-weight:900;border:none;border-radius:40px;padding:13px 32px;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  box-shadow:0 0 20px rgba(255,180,0,.5);animation:ucSlide .4s .55s ease-out both,startP 1.6s 1s ease-in-out infinite;
+  -webkit-user-select:none;user-select:none;letter-spacing:1px;}
+@keyframes startP{0%,100%{box-shadow:0 0 14px rgba(255,150,0,.5)}50%{box-shadow:0 0 36px rgba(255,210,0,.95)}}
+
+/* ゲームオーバー */
+.gameover{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+  z-index:450;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.gameover.show{display:flex;}
+.go-txt{font-family:'Boogaloo',cursive;font-size:44px;color:var(--wrong);
+  text-shadow:0 0 30px rgba(255,50,50,.8);animation:goBoom .4s cubic-bezier(.34,1.56,.64,1);}
+@keyframes goBoom{from{transform:scale(0) rotate(-15deg)}to{transform:scale(1)}}
+.go-sub{font-size:13px;color:rgba(255,255,255,.7);font-weight:700;}
+.go-retry-btn{background:linear-gradient(135deg,#ff4400,#ff0000);color:#fff;
+  font-size:17px;font-weight:900;border:none;border-radius:40px;padding:13px 32px;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;-webkit-user-select:none;user-select:none;}
+.go-menu-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);
+  font-size:14px;font-weight:700;border-radius:40px;padding:10px 24px;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;-webkit-user-select:none;user-select:none;}
+
+/* 全グレードクリア */
+.grade-clear{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);
+  z-index:460;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;}
+.grade-clear.show{display:flex;}
+.gc-star{font-size:72px;animation:ucEnemy .6s cubic-bezier(.34,1.56,.64,1);}
+.gc-title{font-family:'Boogaloo',cursive;font-size:32px;color:var(--gold);
+  text-shadow:0 0 24px rgba(255,215,0,.9);animation:ucSlide .4s .2s ease-out both;}
+.gc-sub{font-size:13px;color:#fff;font-weight:700;line-height:1.8;animation:ucSlide .4s .35s ease-out both;}
+.gc-btn{margin-top:4px;background:linear-gradient(135deg,#cc44ff,#0088ff);color:#fff;
+  font-size:17px;font-weight:900;border:none;border-radius:40px;padding:13px 32px;
+  cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  box-shadow:0 0 20px rgba(150,80,255,.5);-webkit-user-select:none;user-select:none;}
+
+/* 汎用ボタン */
+.btn{border:none;outline:none;cursor:pointer;font-family:'Noto Sans JP',sans-serif;
+  font-weight:900;-webkit-user-select:none;user-select:none;border-radius:42px;}
+.btn-start{background:linear-gradient(135deg,#ffd700,#ff6600);color:#170000;
+  font-size:18px;padding:13px 38px;box-shadow:0 0 20px rgba(255,150,0,.5);
+  letter-spacing:1px;animation:startP 1.6s ease-in-out infinite;}
+.btn-start:active{transform:scale(.92);}
+
+.hidden{display:none!important;}
+
+@media (max-width:410px){
+  #screen-game{padding:5px 8px 20px;gap:4px;}
+  .fighter-label{font-size:9px;}.lv-badge{font-size:7px;}
+  .hp-track{height:9px;}.hp-text,.exp-text{font-size:7px;}
+  .vs-badge{font-size:11px;}
+  .n-btn{height:42px;font-size:18px;}.n-ok{height:42px;}
+  .num-disp{font-size:20px;min-height:40px;}
+  .battle-stage{height:78px;}
+  .fighter{font-size:36px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-stars" id="stars"></div>
+<div class="bg-ground"></div>
+
+<div id="app">
+
+<!-- タイトル -->
+<div id="screen-title">
+  <div class="title-icon">🧮</div>
+  <div class="title-logo">さんすう<br>アドベンチャー！</div>
+  <div class="title-sub">学年ごとに単元をクリアして<br>キャラをそだてよう！📚⚔️✨</div>
+  <div class="save-info" id="titleSaveInfo"></div>
+  <button class="btn btn-start" onclick="goGradeSelect()">あそぶ！</button>
+  <button class="save-clear-btn" onclick="clearSave()">セーブデータをリセット</button>
+</div>
+
+<!-- 学年選択 -->
+<div id="screen-grade" class="hidden">
+  <div class="screen-title">📚 学年をえらぼう</div>
+  <button class="screen-back" onclick="showTitle()">← もどる</button>
+  <div class="grade-grid" id="gradeGrid"></div>
+</div>
+
+<!-- 単元選択 -->
+<div id="screen-unit" class="hidden">
+  <div class="screen-title" id="unitScreenTitle">単元をえらぼう</div>
+  <button class="screen-back" onclick="showGradeSelect()">← 学年にもどる</button>
+  <div class="unit-list" id="unitList"></div>
+</div>
+
+<!-- キャラ選択 -->
+<div id="screen-char" class="hidden">
+  <div class="screen-title">⚔️ キャラをえらぼう</div>
+  <button class="screen-back" onclick="showUnitSelect()">← もどる</button>
+  <div class="char-grid" id="charGrid"></div>
+  <div class="char-preview" id="charPreview">
+    <div class="preview-name" id="previewName"></div>
+    <div class="preview-evo" id="previewEvo"></div>
+    <div class="preview-stats" id="previewStats"></div>
+  </div>
+  <button class="btn btn-start" onclick="startGame()" id="startBtn">バトル！</button>
+</div>
+
+<!-- ゲーム -->
+<div id="screen-game" class="hidden">
+  <div class="unit-header">
+    <div class="unit-badge" id="unitBadge"></div>
+    <div class="diff-badge" id="diffBadge"></div>
+  </div>
+
+  <div class="status-row">
+    <div class="status-block">
+      <div class="fighter-label">
+        <span id="p1Name">プレイヤー</span>
+        <span class="lv-badge" id="p1Lv">Lv1</span>
+      </div>
+      <div class="hp-track"><div class="hp-fill p1" id="p1HpFill" style="width:100%"></div></div>
+      <div class="hp-text" id="p1HpText">HP 100/100</div>
+      <div class="exp-track"><div class="exp-fill" id="expFill" style="width:0%"></div></div>
+      <div class="exp-text" id="expText">EXP 0</div>
+    </div>
+    <div class="vs-badge">VS</div>
+    <div class="status-block right">
+      <div class="fighter-label">
+        <span class="lv-badge enemy-badge" id="enemyLabel">てき</span>
+        <span id="enemyName">スライム</span>
+      </div>
+      <div class="hp-track"><div class="hp-fill p2" id="p2HpFill" style="width:100%"></div></div>
+      <div class="hp-text" id="p2HpText">HP 100/100</div>
+    </div>
+  </div>
+
+  <div class="combo-zone">
+    <span class="combo-txt" id="comboTxt"></span>
+  </div>
+
+  <div class="battle-stage" id="battleStage">
+    <div class="stage-grid"></div>
+    <div class="stage-floor"></div>
+    <div class="fighter p1" id="fighter1">🐉</div>
+    <div class="fighter p2" id="fighter2">🐛</div>
+  </div>
+
+  <div class="q-card">
+    <div class="q-timer"><div class="q-timer-fill" id="qTimerFill" style="width:100%"></div></div>
+    <div class="q-label" id="qLabel">もんだい</div>
+    <div class="q-text" id="qText">　</div>
+    <div class="q-hint" id="qHint"></div>
+    <div class="q-count" id="qCount"></div>
+  </div>
+
+  <div class="explain-box" id="explainBox">
+    <div class="explain-title" id="explainTitle"></div>
+    <div class="explain-content" id="explainContent"></div>
+    <button class="explain-next-btn" onclick="nextQuestion()">つぎへ ▶</button>
+  </div>
+
+  <div class="numpad-wrap" id="numpadWrap">
+    <div class="numpad">
+      <div class="num-disp empty" id="numDisp">？</div>
+      <button class="n-btn" onclick="numInput('7')">7</button>
+      <button class="n-btn" onclick="numInput('8')">8</button>
+      <button class="n-btn" onclick="numInput('9')">9</button>
+      <button class="n-btn" onclick="numInput('4')">4</button>
+      <button class="n-btn" onclick="numInput('5')">5</button>
+      <button class="n-btn" onclick="numInput('6')">6</button>
+      <button class="n-btn" onclick="numInput('1')">1</button>
+      <button class="n-btn" onclick="numInput('2')">2</button>
+      <button class="n-btn" onclick="numInput('3')">3</button>
+      <button class="n-btn n-dot" id="dotBtn" onclick="numInput('.')">・</button>
+      <button class="n-btn" onclick="numInput('0')">0</button>
+      <button class="n-btn n-del" onclick="numDel()">⌫</button>
+      <button class="n-btn n-ok" onclick="submitAnswer()">こたえる！</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<!-- フィードバック -->
+<div class="fb-overlay"><div class="fb-txt" id="fbTxt"></div></div>
+
+<!-- レベルアップ -->
+<div class="lvup-notify" id="lvupNotify">
+  <div class="lvup-title">レベルアップ！</div>
+  <div class="lvup-evo" id="lvupEvo">⭐</div>
+  <div class="lvup-detail" id="lvupDetail"></div>
+</div>
+
+<!-- 進化 -->
+<div class="evo-notify" id="evoNotify">
+  <div class="evo-title">✨ しんか ✨</div>
+  <div class="evo-char" id="evoChar">🐉</div>
+  <div class="evo-name" id="evoName"></div>
+  <div class="evo-sub" id="evoSub"></div>
+</div>
+
+<!-- ユニットクリア -->
+<div class="unit-clear" id="unitClear">
+  <div class="uc-enemy" id="ucEnemy">🏆</div>
+  <div class="uc-title">クリア！</div>
+  <div class="uc-sub" id="ucSub"></div>
+  <div class="uc-exp" id="ucExp"></div>
+  <button class="uc-next-btn" onclick="onUnitClearNext()">つぎへ ▶</button>
+</div>
+
+<!-- ゲームオーバー -->
+<div class="gameover" id="gameover">
+  <div style="font-size:56px">💀</div>
+  <div class="go-txt">やられた！</div>
+  <div class="go-sub" id="goSub"></div>
+  <button class="go-retry-btn" onclick="retryUnit()">もういちど！</button>
+  <button class="go-menu-btn" onclick="showUnitSelect()">たんげん えらびにもどる</button>
+</div>
+
+<!-- 学年クリア -->
+<div class="grade-clear" id="gradeClear">
+  <div class="gc-star">🏆</div>
+  <div class="gc-title" id="gcTitle"></div>
+  <div class="gc-sub" id="gcSub"></div>
+  <button class="gc-btn" onclick="onGradeClearNext()">つぎの学年へ！</button>
+</div>
+
+<script>
+// ============================================================
+//  データ定義
+// ============================================================
+const CHARS = [
+  {e:'🐉',n:'ドラゴン'},   {e:'🦁',n:'ライオン'},  {e:'🦉',n:'フクロウ'},
+  {e:'🐊',n:'クロコ'},     {e:'🦔',n:'ハリネズミ'},{e:'🐅',n:'タイガー'},
+  {e:'🦊',n:'フォックス'}, {e:'🐺',n:'ウルフ'},    {e:'🐢',n:'タートル'},
+  {e:'🦅',n:'イーグル'},   {e:'🦚',n:'クジャク'},  {e:'🐇',n:'ラビット'},
+  {e:'🦋',n:'バタフライ'}, {e:'🐸',n:'カエル'},    {e:'🐗',n:'イノシシ'},
+  {e:'🦄',n:'ユニコーン'},
+];
+const EVO_NAMES = ['', '⚡進化', '👑伝説'];
+
+const GRADES = [
+  { g:1, name:'小学１年生', emoji:'⭐',  color:'#ff8844',
+    units:[
+      { name:'たし算（１ケタ）',  type:'add1',     enemy:'🐛', bossEnemy:'🐝',
+        tip:'大きいほうから数えてみよう！'},
+      { name:'ひき算（１ケタ）',  type:'sub1',     enemy:'🐞', bossEnemy:'🦗',
+        tip:'たし算でかんがえると早い！□＋？＝大きい数'},
+      { name:'くりあがりのたし算',type:'addCarry', enemy:'🐌', bossEnemy:'🐜',
+        tip:'10をつくるのがコツ！8＋5→8＋2＋3'},
+      { name:'くりさがりのひき算',type:'subBorrow',enemy:'🦟', bossEnemy:'🕷',
+        tip:'となりから10かりる！12−7→10−7＋2'},
+    ]},
+  { g:2, name:'小学２年生', emoji:'⭐⭐', color:'#44ff88',
+    units:[
+      { name:'２ケタのたし算',    type:'add2',  enemy:'🐸', bossEnemy:'🐊',
+        tip:'くらいごとに計算しよう！'},
+      { name:'２ケタのひき算',    type:'sub2',  enemy:'🦎', bossEnemy:'🐢',
+        tip:'くりさがりに注意！'},
+      { name:'かけ算（１〜５の段）',type:'times15',enemy:'🦔', bossEnemy:'🐿',
+        tip:'九九をしっかりおぼえよう！'},
+      { name:'かけ算（６〜９の段）',type:'times69',enemy:'🐇', bossEnemy:'🦫',
+        tip:'難しい段もがんばれ！'},
+    ]},
+  { g:3, name:'小学３年生', emoji:'⭐⭐⭐', color:'#4488ff',
+    units:[
+      { name:'３ケタのたし算',    type:'add3',  enemy:'🦊', bossEnemy:'🐺',
+        tip:'くりあがりに気をつけよう！'},
+      { name:'３ケタのひき算',    type:'sub3',  enemy:'🦝', bossEnemy:'🦡',
+        tip:'くりさがりを丁寧に！'},
+      { name:'かけ算の筆算',      type:'mulComp',enemy:'🐻', bossEnemy:'🐗',
+        tip:'十の位を忘れずに！'},
+      { name:'わり算',            type:'div1',  enemy:'🦌', bossEnemy:'🦬',
+        tip:'九九をつかって考えよう！'},
+    ]},
+  { g:4, name:'小学４年生', emoji:'⭐⭐⭐⭐', color:'#cc44ff',
+    units:[
+      { name:'大きな数のたし引き', type:'add4',  enemy:'🦅', bossEnemy:'🦆',
+        tip:'くらいを正確に！'},
+      { name:'小数のたし引き',    type:'decAdd',enemy:'🦜', bossEnemy:'🦚',
+        tip:'小数点の位置をそろえよう！'},
+      { name:'分数のたし引き（同分母）',type:'fracAdd',enemy:'🦢', bossEnemy:'🕊',
+        tip:'分母はそのまま、分子だけ計算！'},
+      { name:'面積（縦×横）',    type:'area',  enemy:'🦩', bossEnemy:'🦤',
+        tip:'たて×よこ＝めんせき！'},
+    ]},
+  { g:5, name:'小学５年生', emoji:'⭐⭐⭐⭐⭐', color:'#ff44aa',
+    units:[
+      { name:'小数のかけ算・わり算',type:'decMul',enemy:'🐲', bossEnemy:'🦕',
+        tip:'小数点の位置に気をつけよう！'},
+      { name:'分数のたし引き（通分）',type:'fracAddDiff',enemy:'🔥', bossEnemy:'⚡',
+        tip:'分母をそろえてから計算！'},
+      { name:'割合（パーセント）', type:'percent',enemy:'💫', bossEnemy:'✨',
+        tip:'□割＝□÷10、□%＝□÷100！'},
+      { name:'平均',              type:'average',enemy:'🌀', bossEnemy:'💠',
+        tip:'合計÷個数＝平均！'},
+    ]},
+  { g:6, name:'小学６年生', emoji:'🏆', color:'#ffd700',
+    units:[
+      { name:'分数のかけ算・わり算',type:'fracMul',enemy:'👹', bossEnemy:'👺',
+        tip:'約分を忘れずに！'},
+      { name:'比',               type:'ratio', enemy:'💀', bossEnemy:'☠',
+        tip:'内側×内側＝外側×外側（比例）'},
+      { name:'速さ・時間・距離',  type:'speed', enemy:'🤖', bossEnemy:'👾',
+        tip:'は（速）じ（時）き（距）の三角形！'},
+      { name:'体積（縦×横×高さ）',type:'volume',enemy:'💎', bossEnemy:'🔮',
+        tip:'たて×よこ×たかさ！'},
+    ]},
+];
+
+// ============================================================
+//  問題ジェネレーター
+// ============================================================
+function rnd(lo,hi){return Math.floor(Math.random()*(hi-lo+1))+lo;}
+function gcd(a,b){return b===0?a:gcd(b,a%b);}
+
+function makeQ(type, diff){
+  const d=Math.round(Math.max(1,Math.min(5,diff)));
+  switch(type){
+    case 'add1':{
+      const mx=[4,6,7,8,9][d-1];
+      const a=rnd(1,mx), b=rnd(1,Math.min(mx,9-a));
+      return {q:`${a} ＋ ${b} ＝`,a:a+b,t:'int',
+        exp:`${a}＋${b}\n大きいほう（${Math.max(a,b)}）から${Math.min(a,b)}つ数えると…\n→ ${a+b} ✓`};
+    }
+    case 'sub1':{
+      const mx=[5,7,8,9,9][d-1];
+      const b=rnd(1,mx-1), a=rnd(b+1,mx);
+      return {q:`${a} ー ${b} ＝`,a:a-b,t:'int',
+        exp:`${a}ー${b}\nたし算でかんがえよう：${b}＋？＝${a}\n→ ${a-b} ✓`};
+    }
+    case 'addCarry':{
+      const minB=[[2,5],[3,6],[3,7],[4,8],[5,9]][d-1];
+      const a=rnd(7,9), b=rnd(Math.max(minB[0],11-a),minB[1]);
+      return {q:`${a} ＋ ${b} ＝`,a:a+b,t:'int',
+        exp:`くりあがり！\n${a}＋${b} → まず10をつくる\n${a}＋${10-a}＝10、あと${b-(10-a)}たして → ${a+b} ✓`};
+    }
+    case 'subBorrow':{
+      const ranges=[[11,14],[11,15],[12,16],[12,17],[13,18]][d-1];
+      const a=rnd(ranges[0],ranges[1]), b=rnd(2,a-rnd(1,3));
+      return {q:`${a} ー ${b} ＝`,a:a-b,t:'int',
+        exp:`くりさがり！\n${a}ー${b} → となりから10かりる\n${a%10}に10たして${a%10+10}、${a%10+10}ー${b}＝${a-b} ✓`};
+    }
+    case 'add2':{
+      const mx=[40,60,70,80,99][d-1];
+      const a=rnd(10,mx), b=rnd(10,mx-a>10?Math.min(mx,mx):mx);
+      if(a+b>999)return makeQ(type,d); // retry
+      return {q:`${a} ＋ ${b} ＝`,a:a+b,t:'int',
+        exp:`${a}＋${b}\n一の位：${a%10}＋${b%10}、十の位：${Math.floor(a/10)}＋${Math.floor(b/10)}\n→ ${a+b} ✓`};
+    }
+    case 'sub2':{
+      const mx=[50,70,80,90,99][d-1];
+      const a=rnd(20,mx), b=rnd(10,a-1);
+      return {q:`${a} ー ${b} ＝`,a:a-b,t:'int',
+        exp:`${a}ー${b} ＝ ${a-b} ✓`};
+    }
+    case 'times15':{
+      const maxB=[3,4,5,5,5][d-1];
+      const a=rnd(1,9), b=rnd(1,maxB);
+      return {q:`${a} × ${b} ＝`,a:a*b,t:'int',
+        exp:`${a}の${b}ばい ＝ ${a*b}\n九九：${a}×${b}＝${a*b} ✓`};
+    }
+    case 'times69':{
+      const minB=[6,6,7,8,6][d-1],maxB=[9,9,9,9,9][d-1];
+      const a=rnd(1,9), b=rnd(minB,maxB);
+      return {q:`${a} × ${b} ＝`,a:a*b,t:'int',
+        exp:`${a}×${b}＝${a*b} ✓\n九九でしっかりおぼえよう！`};
+    }
+    case 'add3':{
+      const mx=[300,500,700,800,999][d-1];
+      const a=rnd(100,mx), b=rnd(100,Math.min(mx,999-a));
+      return {q:`${a} ＋ ${b} ＝`,a:a+b,t:'int',
+        exp:`${a}＋${b}＝${a+b} ✓`};
+    }
+    case 'sub3':{
+      const mx=[500,700,800,900,999][d-1];
+      const a=rnd(200,mx), b=rnd(100,a-1);
+      return {q:`${a} ー ${b} ＝`,a:a-b,t:'int',
+        exp:`${a}ー${b}＝${a-b} ✓`};
+    }
+    case 'mulComp':{
+      const mx=[3,4,5,7,9][d-1];
+      const a=rnd(10,mx*10+9), b=rnd(2,mx);
+      return {q:`${a} × ${b} ＝`,a:a*b,t:'int',
+        exp:`${a}×${b}＝${a*b}\n一の位×${b}、十の位×${b} ✓`};
+    }
+    case 'div1':{
+      const mx=[4,5,6,7,9][d-1];
+      const b=rnd(2,mx), c=rnd(1,9), a=b*c;
+      return {q:`${a} ÷ ${b} ＝`,a:c,t:'int',
+        exp:`${a}÷${b}＝${c}\n九九で考えよう：${b}×？＝${a} → ${c} ✓`};
+    }
+    case 'add4':{
+      const mx=[3000,5000,7000,9000,9999][d-1];
+      const a=rnd(1000,mx), b=rnd(1000,Math.min(mx,9999-a));
+      return {q:`${a} ＋ ${b} ＝`,a:a+b,t:'int',
+        exp:`${a}＋${b}＝${a+b} ✓`};
+    }
+    case 'decAdd':{
+      const mul=[10,10,10,100,100][d-1];
+      const fa=rnd(1,90)/10, fb=rnd(1,90)/10;
+      const a=Math.round(fa*mul)/mul, b=Math.round(fb*mul)/mul;
+      const ans=Math.round((a+b)*mul)/mul;
+      return {q:`${a} ＋ ${b} ＝`,a:ans,t:'dec',
+        exp:`小数点をそろえて計算\n${a}＋${b}＝${ans} ✓`};
+    }
+    case 'fracAdd':{
+      const dens=[2,3,4,5,6][d-1];
+      const den=rnd(2,dens);
+      const a=rnd(1,den-1), b=rnd(1,den-a);
+      const numAns=a+b, denAns=den;
+      const g=gcd(numAns,denAns);
+      const dispA=numAns/g, dispD=denAns/g;
+      const ansStr=dispD===1?`${dispA}`:`${dispA}/${dispD}`;
+      return {q:`${a}/${den} ＋ ${b}/${den} ＝`,a:numAns/denAns,t:'frac',
+        fracNum:dispA,fracDen:dispD,
+        hint:`（分母は${den}のまま、分子だけたす）`,
+        exp:`${a}/${den}＋${b}/${den}＝${numAns}/${den}${g>1?` ＝${dispA}/${dispD}`:''} ✓`};
+    }
+    case 'area':{
+      const mx=[8,10,12,15,20][d-1];
+      const a=rnd(2,mx), b=rnd(2,mx);
+      return {q:`たて ${a}cm  よこ ${b}cm\nの長方形のめんせきは？`,a:a*b,t:'int',hint:'（cm²）',
+        exp:`めんせき＝たて×よこ\n${a}×${b}＝${a*b} cm² ✓`};
+    }
+    case 'decMul':{
+      const tenths=[1,2,3,4,5][d-1];
+      const a=rnd(tenths,9*tenths)/tenths, b=rnd(1,5);
+      const ans=Math.round(a*b*10)/10;
+      return {q:`${a} × ${b} ＝`,a:ans,t:'dec',
+        exp:`${a}×${b}＝${ans} ✓`};
+    }
+    case 'fracAddDiff':{
+      const pairs=[[2,3],[2,4],[3,4],[3,6],[4,6]][d-1];
+      const [d1,d2]=pairs;
+      const lcm=d1*d2/gcd(d1,d2);
+      const n1=rnd(1,d1-1), n2=rnd(1,d2-1);
+      const cn1=n1*(lcm/d1), cn2=n2*(lcm/d2);
+      const numAns=cn1+cn2, denAns=lcm;
+      const g2=gcd(numAns,denAns);
+      const da=numAns/g2, dd=denAns/g2;
+      const ansStr=dd===1?`${da}`:`${da}/${dd}`;
+      return {q:`${n1}/${d1} ＋ ${n2}/${d2} ＝`,a:numAns/denAns,t:'frac',
+        fracNum:da,fracDen:dd,
+        hint:`（${lcm}に通分してから）`,
+        exp:`${n1}/${d1}＋${n2}/${d2}\n→ ${cn1}/${lcm}＋${cn2}/${lcm}＝${numAns}/${lcm}${g2>1?` ＝${da}/${dd}`:''} ✓`};
+    }
+    case 'percent':{
+      const pairs=[[10,10],[10,20],[10,50],[20,50],[25,100]][d-1];
+      const base=rnd(pairs[0],pairs[1])*10;
+      const pct=[10,20,25,50][rnd(0,3)];
+      const ans=base*pct/100;
+      return {q:`${base}の ${pct}% は？`,a:ans,t:'int',
+        exp:`${base}×${pct}÷100＝${ans} ✓`};
+    }
+    case 'average':{
+      const cnt=[3,3,4,4,5][d-1];
+      const mx=[10,20,30,50,99][d-1];
+      const arr=Array.from({length:cnt},()=>rnd(1,mx));
+      const sum=arr.reduce((s,v)=>s+v,0);
+      const avg=sum/cnt;
+      const isInt=Number.isInteger(avg);
+      if(!isInt&&d<4) return makeQ(type,d);
+      return {q:`${arr.join('、')} の平均は？`,a:avg,t:isInt?'int':'dec',
+        exp:`（${arr.join('＋')}）÷${cnt}\n＝${sum}÷${cnt}＝${avg} ✓`};
+    }
+    case 'fracMul':{
+      const d1=rnd(2,5), d2=rnd(2,5);
+      const n1=rnd(1,d1-1), n2=rnd(1,d2-1);
+      const rn=n1*n2, rd=d1*d2;
+      const g3=gcd(rn,rd);
+      const fa=rn/g3, fb=rd/g3;
+      const ansStr=fb===1?`${fa}`:`${fa}/${fb}`;
+      return {q:`${n1}/${d1} × ${n2}/${d2} ＝`,a:rn/rd,t:'frac',fracNum:fa,fracDen:fb,
+        exp:`分子どうし×分子、分母どうし×分母\n${n1}×${n2}＝${rn}、${d1}×${d2}＝${rd}\n→ ${rn}/${rd}${g3>1?` ＝${fa}/${fb}`:''} ✓`};
+    }
+    case 'ratio':{
+      const bases=[2,3,4,6,8][d-1];
+      const a=rnd(1,bases), b=rnd(2,bases+1), mult=rnd(2,5);
+      const missing=a*mult;
+      return {q:`${a} : ${b} ＝ □ : ${b*mult}`,a:missing,t:'int',
+        exp:`${a}:${b}＝□:${b*mult}\n${b*mult}÷${b}＝${mult}（${mult}倍）\n□＝${a}×${mult}＝${missing} ✓`};
+    }
+    case 'speed':{
+      const spds=[30,40,50,60,80][d-1];
+      const spd=spds, mins=[10,15,20,30,60][rnd(0,4)];
+      const dist=Math.round(spd*mins/60*10)/10;
+      const type2=rnd(0,1);
+      if(type2===0){
+        return {q:`時速${spd}kmで${mins}分走ると\n何km進む？`,a:dist,t:'dec',
+          exp:`距離＝速さ×時間\n${spd}×(${mins}÷60)＝${dist}km ✓`};
+      } else {
+        const distI=spd*(mins/60);
+        if(!Number.isInteger(distI)) return makeQ(type,d);
+        return {q:`時速${spd}kmで${distI}km行くには\n何分かかる？`,a:mins,t:'int',
+          exp:`時間＝距離÷速さ\n${distI}÷${spd}時間＝${mins}分 ✓`};
+      }
+    }
+    case 'volume':{
+      const mx=[5,6,8,10,12][d-1];
+      const a=rnd(2,mx), b=rnd(2,mx), c=rnd(2,mx);
+      return {q:`たて${a}cm よこ${b}cm 高さ${c}cm\nの直方体の体積は？`,a:a*b*c,t:'int',hint:'（cm³）',
+        exp:`体積＝たて×よこ×高さ\n${a}×${b}×${c}＝${a*b*c}cm³ ✓`};
+    }
+    default:
+      return {q:'？',a:0,t:'int',exp:''};
+  }
+}
+
+// ============================================================
+//  セーブ
+// ============================================================
+const SAVE_KEY='mathAdv_v1';
+function loadSave(){try{return JSON.parse(localStorage.getItem(SAVE_KEY))||null;}catch{return null;}}
+function writeSave(){
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      charIdx:G.charIdx,
+      charLvs:G.charLvs, charExps:G.charExps,
+      clearedUnits:[...G.clearedUnits],
+      curGradeIdx:G.curGradeIdx, curUnitIdx:G.curUnitIdx,
+    }));
+  }catch{}
+}
+function clearSave(){
+  if(!confirm('セーブデータをけしますか？'))return;
+  localStorage.removeItem(SAVE_KEY);location.reload();
+}
+
+// ============================================================
+//  グローバル状態
+// ============================================================
+let G={};
+function initG(){
+  const sv=loadSave();
+  const numChars=CHARS.length;
+  G={
+    charIdx:   sv?.charIdx   ?? 0,
+    charLvs:   sv?.charLvs   ?? Array(numChars).fill(1),
+    charExps:  sv?.charExps  ?? Array(numChars).fill(0),
+    clearedUnits: new Set(sv?.clearedUnits ?? []),
+    curGradeIdx: sv?.curGradeIdx ?? 0,
+    curUnitIdx:  sv?.curUnitIdx  ?? 0,
+    // 現在のゲーム状態
+    playGradeIdx:0, playUnitIdx:0,
+    pHp:100, eHp:100, pMaxHp:100, eMaxHp:100,
+    combo:0, answered:0, correct:0,
+    diff:2.0, recentResults:[], // true/false array (last 5)
+    expGain:0,
+    currentQ:null, inputStr:'',
+    showingExplain:false, timerHandle:null, timerPct:100,
+  };
+}
+
+// レベル計算
+const EXP_TABLE=[0,10,25,45,70,100,140,190,250,320,400];
+function expToNext(lv){return (EXP_TABLE[Math.min(lv,10)]??999)-G.charExps[G.charIdx];}
+function evoStage(lv){return lv>=10?2:lv>=5?1:0;}
+function charLabel(idx){
+  const lv=G.charLvs[idx];
+  const evo=evoStage(lv);
+  return evo===2?`👑${CHARS[idx].e}`:evo===1?`⚡${CHARS[idx].e}`:CHARS[idx].e;
+}
+
+// ============================================================
+//  画面切替ヘルパー
+// ============================================================
+const SCREENS=['screen-title','screen-grade','screen-unit','screen-char','screen-game'];
+function showOnly(id){SCREENS.forEach(s=>document.getElementById(s).classList.toggle('hidden',s!==id));}
+
+// ============================================================
+//  星アニメーション
+// ============================================================
+function makeStars(){
+  const c=document.getElementById('stars');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');s.className='star';
+    const sz=Math.random()*2+1;
+    s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.5+Math.random()*2}s`;
+    c.appendChild(s);
+  }
+}
+
+// ============================================================
+//  タイトル画面
+// ============================================================
+function showTitle(){
+  showOnly('screen-title');
+  const info=document.getElementById('titleSaveInfo');
+  const ci=G.charIdx;
+  const lv=G.charLvs[ci];
+  const gr=GRADES[G.curGradeIdx];
+  const cleared=G.clearedUnits.size;
+  info.textContent=`${charLabel(ci)} ${CHARS[ci].n} Lv${lv}  ／  ${gr.name}  クリア単元：${cleared}`;
+}
+
+// ============================================================
+//  学年選択
+// ============================================================
+function goGradeSelect(){showGradeSelect();}
+function showGradeSelect(){
+  showOnly('screen-grade');
+  const grid=document.getElementById('gradeGrid');
+  grid.innerHTML='';
+  GRADES.forEach((gr,gi)=>{
+    const unlocked=gi===0||isGradeCleared(gi-1);
+    const allCleared=isGradeCleared(gi);
+    const isCurrent=gi===G.curGradeIdx;
+    const div=document.createElement('div');
+    div.className='grade-card'+(unlocked?' unlocked':'  locked')+(isCurrent?' current':'');
+    const cleared=gr.units.filter((_,ui)=>G.clearedUnits.has(unitKey(gi,ui))).length;
+    div.innerHTML=`
+      <div class="grade-emoji">${gr.emoji}</div>
+      <div class="grade-name">${gr.name}</div>
+      <div class="grade-prog">${cleared}/${gr.units.length} 単元クリア</div>
+      ${allCleared?'<div class="grade-complete-badge">完了！</div>':''}
+      ${!unlocked?'<div class="grade-lock-icon">🔒</div>':''}
+    `;
+    if(unlocked) div.onclick=()=>selectGrade(gi);
+    grid.appendChild(div);
+  });
+}
+function isGradeCleared(gi){
+  return GRADES[gi].units.every((_,ui)=>G.clearedUnits.has(unitKey(gi,ui)));
+}
+function unitKey(gi,ui){return `${gi}-${ui}`;}
+
+// ============================================================
+//  単元選択
+// ============================================================
+function selectGrade(gi){
+  G.playGradeIdx=gi;
+  showUnitSelect();
+}
+function showUnitSelect(){
+  showOnly('screen-unit');
+  const gr=GRADES[G.playGradeIdx];
+  document.getElementById('unitScreenTitle').textContent=`${gr.emoji} ${gr.name}`;
+  const list=document.getElementById('unitList');
+  list.innerHTML='';
+  gr.units.forEach((unit,ui)=>{
+    const cleared=G.clearedUnits.has(unitKey(G.playGradeIdx,ui));
+    const unlocked=ui===0||G.clearedUnits.has(unitKey(G.playGradeIdx,ui-1));
+    const isCurrent=G.playGradeIdx===G.curGradeIdx&&ui===G.curUnitIdx;
+    const div=document.createElement('div');
+    div.className='unit-card'+(cleared?' cleared':unlocked?' unlocked':' locked')+(isCurrent?' active-unit':'');
+    div.innerHTML=`
+      <div class="unit-enemy">${cleared?unit.bossEnemy:unit.enemy}</div>
+      <div class="unit-body">
+        <div class="unit-name">${unit.name}</div>
+        <div class="unit-detail">${unit.tip||''}</div>
+      </div>
+      <div class="unit-status">${cleared?'✅':unlocked?'▶':'🔒'}</div>
+    `;
+    if(unlocked) div.onclick=()=>selectUnit(ui);
+    list.appendChild(div);
+  });
+}
+function selectUnit(ui){
+  G.playUnitIdx=ui;
+  showCharSelect();
+}
+
+// ============================================================
+//  キャラ選択
+// ============================================================
+function showCharSelect(){
+  showOnly('screen-char');
+  renderCharGrid();
+  showCharPreview(G.charIdx);
+}
+function renderCharGrid(){
+  const grid=document.getElementById('charGrid');
+  grid.innerHTML='';
+  CHARS.forEach((c,i)=>{
+    const lv=G.charLvs[i];
+    const evo=evoStage(lv);
+    const div=document.createElement('div');
+    div.className='char-card'+(i===G.charIdx?' selected':'');
+    div.innerHTML=`
+      <div class="char-emoji">${c.e}${evo===2?'<span class="evo-badge">👑</span>':evo===1?'<span class="evo-badge">⚡</span>':''}</div>
+      <div class="char-name">${c.n}</div>
+      <div class="char-lv">Lv${lv}</div>
+    `;
+    div.onclick=()=>{
+      G.charIdx=i;
+      document.querySelectorAll('.char-card').forEach(el=>el.classList.remove('selected'));
+      div.classList.add('selected');
+      showCharPreview(i);
+    };
+    grid.appendChild(div);
+  });
+}
+function showCharPreview(i){
+  const c=CHARS[i], lv=G.charLvs[i], evo=evoStage(lv);
+  const exp=G.charExps[i];
+  const nextThresh=EXP_TABLE[Math.min(lv,10)]??'MAX';
+  const preview=document.getElementById('charPreview');
+  preview.classList.add('show');
+  document.getElementById('previewName').textContent=`${c.e} ${c.n}`;
+  document.getElementById('previewEvo').textContent=evo>0?`✨ ${EVO_NAMES[evo]}形態`:'';
+  document.getElementById('previewStats').textContent=
+    `Lv${lv}  EXP ${exp}/${nextThresh}\n${evo===0?'Lv5で進化！Lv10で最終形態！':evo===1?'Lv10で最終形態へ！':'最強の伝説形態！'}`;
+}
+
+// ============================================================
+//  ゲーム開始
+// ============================================================
+function startGame(){
+  const gi=G.playGradeIdx, ui=G.playUnitIdx;
+  const gr=GRADES[gi], unit=gr.units[ui];
+  // HP / 状態リセット
+  G.pHp=100; G.eHp=100; G.pMaxHp=100; G.eMaxHp=100;
+  G.combo=0; G.answered=0; G.correct=0;
+  G.diff=2.0; G.recentResults=[];
+  G.expGain=0;
+  G.showingExplain=false;
+
+  // 難易度は学年で底上げ
+  G.diff=1.0+gi*0.5;
+
+  showOnly('screen-game');
+  // HUD更新
+  const c=CHARS[G.charIdx], lv=G.charLvs[G.charIdx], evo=evoStage(lv);
+  document.getElementById('p1Name').textContent=c.n;
+  document.getElementById('p1Lv').textContent=`Lv${lv}`;
+  const f1=document.getElementById('fighter1');
+  f1.textContent=c.e;
+  f1.className='fighter p1'+(evo===2?' evo2':evo===1?' evo1':'');
+  document.getElementById('fighter2').textContent=unit.enemy;
+  document.getElementById('enemyName').textContent=unit.name;
+  document.getElementById('unitBadge').textContent=`${gr.emoji} ${unit.name}`;
+  // 小数点ボタン表示制御
+  const needDot=['decAdd','decMul','average','speed'].includes(unit.type);
+  document.getElementById('dotBtn').style.visibility=needDot?'visible':'hidden';
+
+  updateHpBars();
+  updateExpBar();
+  nextQuestion();
+}
+
+function updateHpBars(){
+  const p1pct=Math.max(0,G.pHp/G.pMaxHp*100);
+  const p2pct=Math.max(0,G.eHp/G.eMaxHp*100);
+  document.getElementById('p1HpFill').style.width=p1pct+'%';
+  document.getElementById('p2HpFill').style.width=p2pct+'%';
+  document.getElementById('p1HpText').textContent=`HP ${Math.max(0,G.pHp)}/${G.pMaxHp}`;
+  document.getElementById('p2HpText').textContent=`HP ${Math.max(0,G.eHp)}/${G.eMaxHp}`;
+  updateDiffBadge();
+}
+function updateExpBar(){
+  const idx=G.charIdx, lv=G.charLvs[idx];
+  const exp=G.charExps[idx];
+  const prevThresh=EXP_TABLE[Math.min(lv-1,10)]??0;
+  const nextThresh=EXP_TABLE[Math.min(lv,10)]??exp+1;
+  const pct=(exp-prevThresh)/(nextThresh-prevThresh)*100;
+  document.getElementById('expFill').style.width=Math.min(100,pct)+'%';
+  document.getElementById('expText').textContent=`EXP ${exp}`;
+}
+function updateDiffBadge(){
+  const d=G.diff;
+  const labels=['やさしい','ふつう','むずかしい','超難しい！'];
+  const i=d<=1.5?0:d<=2.5?1:d<=3.5?2:3;
+  document.getElementById('diffBadge').textContent='難易度：'+labels[i]+'★'.repeat(Math.min(4,i+1));
+}
+
+// ============================================================
+//  問題
+// ============================================================
+const MAX_Q=12;
+let timerInterval=null;
+function nextQuestion(){
+  document.getElementById('explainBox').classList.remove('show');
+  document.getElementById('numpadWrap').style.display='';
+  G.showingExplain=false;
+  G.inputStr='';
+  updateDisp();
+
+  if(G.answered>=MAX_Q||G.eHp<=0||G.pHp<=0){endBattle();return;}
+
+  const unit=GRADES[G.playGradeIdx].units[G.playUnitIdx];
+  G.currentQ=makeQ(unit.type,G.diff);
+  const q=G.currentQ;
+  document.getElementById('qLabel').textContent=`もんだい ${G.answered+1}/${MAX_Q}`;
+  document.getElementById('qText').textContent=q.q;
+  document.getElementById('qHint').textContent=q.hint||'';
+  document.getElementById('qCount').textContent='';
+
+  // タイマー
+  if(timerInterval) clearInterval(timerInterval);
+  G.timerPct=100;
+  document.getElementById('qTimerFill').style.width='100%';
+  const timeLimit=30;
+  let elapsed=0;
+  timerInterval=setInterval(()=>{
+    elapsed+=0.1;
+    G.timerPct=Math.max(0,(1-elapsed/timeLimit)*100);
+    document.getElementById('qTimerFill').style.width=G.timerPct+'%';
+    if(elapsed>=timeLimit){clearInterval(timerInterval);onTimeout();}
+  },100);
+}
+
+function onTimeout(){
+  if(G.showingExplain)return;
+  G.answered++;
+  G.combo=0;
+  document.getElementById('comboTxt').style.display='none';
+  G.recentResults.push(false);
+  if(G.recentResults.length>5)G.recentResults.shift();
+  adjustDiff();
+  // ダメージ
+  const dmg=15;
+  G.pHp=Math.max(0,G.pHp-dmg);
+  updateHpBars();
+  showFb('⏱️','#ffaa44');
+  animFighter('fighter2','atk');animFighter('fighter1','dmg');
+  showExplain(`⏱️ じかんぎれ！ こたえは ${fmtAns(G.currentQ)} だよ`,G.currentQ.exp||'');
+}
+
+function fmtAns(q){
+  if(q.t==='frac'){return q.fracDen===1?`${q.fracNum}`:`${q.fracNum}/${q.fracDen}`;}
+  if(q.t==='dec'){return `${q.a}`;}
+  return `${q.a}`;
+}
+
+function numInput(c){
+  if(G.showingExplain)return;
+  if(c==='.'&&G.inputStr.includes('.'))return;
+  if(G.inputStr.length>=8)return;
+  if(c==='.'&&G.inputStr==='')G.inputStr='0';
+  G.inputStr+=c;
+  updateDisp();
+}
+function numDel(){
+  if(G.showingExplain)return;
+  G.inputStr=G.inputStr.slice(0,-1);
+  updateDisp();
+}
+function updateDisp(){
+  const d=document.getElementById('numDisp');
+  d.textContent=G.inputStr||'？';
+  d.className='num-disp'+(G.inputStr?'':' empty');
+}
+
+function submitAnswer(){
+  if(G.showingExplain||!G.inputStr)return;
+  clearInterval(timerInterval);
+  G.answered++;
+  const q=G.currentQ;
+  let userVal=parseFloat(G.inputStr);
+  let correct=false;
+
+  if(q.t==='frac'){
+    // 分数の場合：入力が分子/分母 or 小数で判定
+    if(G.inputStr.includes('/')){
+      const parts=G.inputStr.split('/');
+      userVal=parseInt(parts[0])/parseInt(parts[1]);
+    }
+    correct=Math.abs(userVal-q.a)<0.001;
+  } else if(q.t==='dec'){
+    correct=Math.abs(userVal-q.a)<0.01;
+  } else {
+    correct=userVal===q.a;
+  }
+
+  G.recentResults.push(correct);
+  if(G.recentResults.length>5)G.recentResults.shift();
+  adjustDiff();
+
+  if(correct){
+    G.correct++;G.combo++;
+    const dmg=Math.min(30,20+G.combo*2);
+    G.eHp=Math.max(0,G.eHp-dmg);
+    gainExp(1);
+    updateHpBars();updateExpBar();
+    showFb('✨正解！','var(--correct)');
+    animFighter('fighter1','atk');animFighter('fighter2','dmg');
+    showDmgNum(dmg,false);
+    if(G.combo>=3){
+      const ct=document.getElementById('comboTxt');
+      ct.textContent=`${G.combo}コンボ！`;ct.style.display='';
+      ct.style.animation='none';void ct.offsetWidth;ct.style.animation='';
+    }
+    showExplain('✨ せいかい！',q.exp||'');
+  } else {
+    G.combo=0;
+    document.getElementById('comboTxt').style.display='none';
+    const dmg=15;
+    G.pHp=Math.max(0,G.pHp-dmg);
+    updateHpBars();
+    showFb('💥まちがい','var(--wrong)');
+    animFighter('fighter2','atk');animFighter('fighter1','dmg');
+    showDmgNum(dmg,true);
+    showExplain(`❌ ざんねん！ こたえは ${fmtAns(q)} だよ`,q.exp||'');
+  }
+}
+
+function adjustDiff(){
+  const recent=G.recentResults;
+  if(recent.length<3)return;
+  const acc=recent.filter(Boolean).length/recent.length;
+  if(acc>=0.8)G.diff=Math.min(5,G.diff+0.4);
+  else if(acc<=0.4)G.diff=Math.max(1,G.diff-0.4);
+}
+
+function showExplain(title,content){
+  G.showingExplain=true;
+  document.getElementById('numpadWrap').style.display='none';
+  const box=document.getElementById('explainBox');
+  document.getElementById('explainTitle').textContent=title;
+  document.getElementById('explainContent').textContent=content;
+  box.classList.add('show');
+}
+
+// ============================================================
+//  EXP・レベルアップ
+// ============================================================
+function gainExp(amt){
+  const idx=G.charIdx;
+  G.charExps[idx]+=amt;
+  G.expGain+=amt;
+  // レベルアップ判定
+  let lv=G.charLvs[idx];
+  const evoOld=evoStage(lv);
+  while(lv<10&&G.charExps[idx]>=EXP_TABLE[lv]){lv++;}
+  const evoNew=evoStage(lv);
+  if(lv!==G.charLvs[idx]){
+    G.charLvs[idx]=lv;
+    writeSave();
+    showLvUp(lv,evoOld,evoNew);
+  }
+}
+function showLvUp(newLv,evoOld,evoNew){
+  const notify=document.getElementById('lvupNotify');
+  const idx=G.charIdx, c=CHARS[idx];
+  document.getElementById('lvupEvo').textContent=c.e;
+  document.getElementById('lvupDetail').textContent=`${c.n}  →  Lv${newLv}\n${evoNew>evoOld?'✨ しんか！':'つよくなった！'}`;
+  notify.classList.add('show');
+  setTimeout(()=>{
+    notify.classList.remove('show');
+    if(evoNew>evoOld)setTimeout(()=>showEvoAnim(idx,evoNew),300);
+  },2000);
+  // ファイター更新
+  setTimeout(()=>{
+    const f1=document.getElementById('fighter1');
+    f1.className='fighter p1'+(evoNew===2?' evo2':evoNew===1?' evo1':'');
+  },100);
+}
+function showEvoAnim(idx,evoStg){
+  const c=CHARS[idx];
+  document.getElementById('evoChar').textContent=c.e;
+  document.getElementById('evoName').textContent=`${c.n}  ${EVO_NAMES[evoStg]}！`;
+  document.getElementById('evoSub').textContent=evoStg===2?'最強の伝説形態！':'パワーアップした！';
+  const notify=document.getElementById('evoNotify');
+  notify.classList.add('show');
+  setTimeout(()=>notify.classList.remove('show'),3000);
+}
+
+// ============================================================
+//  バトル終了
+// ============================================================
+function endBattle(){
+  clearInterval(timerInterval);
+  const win=G.eHp<=0||(G.answered>=MAX_Q&&G.correct>G.answered/2);
+  if(win)onWin();else onLose();
+}
+
+function onWin(){
+  const gi=G.playGradeIdx, ui=G.playUnitIdx;
+  const unit=GRADES[gi].units[ui];
+  const key=unitKey(gi,ui);
+  const isNew=!G.clearedUnits.has(key);
+  G.clearedUnits.add(key);
+  G.curGradeIdx=gi; G.curUnitIdx=ui;
+  const bonusExp=5+gi*2;
+  gainExp(bonusExp);
+  G.expGain+=bonusExp;
+  writeSave();
+
+  document.getElementById('ucEnemy').textContent=unit.bossEnemy;
+  document.getElementById('ucSub').textContent=
+    `${GRADES[gi].name}「${unit.name}」クリア！\n正解 ${G.correct}/${G.answered}問`;
+  document.getElementById('ucExp').textContent=`＋${G.expGain} EXP ゲット！`;
+  document.getElementById('unitClear').classList.add('show');
+}
+
+function onLose(){
+  document.getElementById('goSub').textContent=`正解 ${G.correct}/${G.answered}問\nもう一度チャレンジ！`;
+  document.getElementById('gameover').classList.add('show');
+}
+
+function onUnitClearNext(){
+  document.getElementById('unitClear').classList.remove('show');
+  const gi=G.playGradeIdx;
+  // 全単元クリア？
+  if(isGradeCleared(gi)){
+    showGradeClear(gi);return;
+  }
+  // 次の単元へ
+  const nextUi=G.playUnitIdx+1;
+  if(nextUi<GRADES[gi].units.length){
+    G.playUnitIdx=nextUi;
+    G.curUnitIdx=nextUi;
+    writeSave();
+    showCharSelect();
+  } else {
+    showUnitSelect();
+  }
+}
+
+function showGradeClear(gi){
+  const gr=GRADES[gi];
+  document.getElementById('gcTitle').textContent=`${gr.emoji} ${gr.name} 完全クリア！`;
+  document.getElementById('gcSub').textContent=
+    `すべての単元をクリアしたよ！\n${gi<5?GRADES[gi+1].name+'に進もう！':'算数の達人になったね！'}`;
+  document.getElementById('gradeClear').classList.add('show');
+}
+
+function onGradeClearNext(){
+  document.getElementById('gradeClear').classList.remove('show');
+  const nextGi=G.playGradeIdx+1;
+  if(nextGi<GRADES.length){
+    G.playGradeIdx=nextGi;
+    G.curGradeIdx=nextGi;
+    G.curUnitIdx=0;
+    writeSave();
+    selectGrade(nextGi);
+  } else {
+    showTitle();
+  }
+}
+
+function retryUnit(){
+  document.getElementById('gameover').classList.remove('show');
+  startGame();
+}
+
+// ============================================================
+//  アニメーション
+// ============================================================
+function animFighter(id,cls){
+  const el=document.getElementById(id);
+  el.classList.remove('atk','dmg');
+  void el.offsetWidth;
+  el.classList.add(cls);
+  setTimeout(()=>el.classList.remove(cls),400);
+}
+
+function showFb(txt,color){
+  const el=document.getElementById('fbTxt');
+  el.textContent=txt;el.style.color=color;
+  el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),900);
+}
+
+function showDmgNum(dmg,isPlayer){
+  const stage=document.getElementById('battleStage');
+  const el=document.createElement('div');
+  el.className='dmg-num';
+  el.textContent=(isPlayer?'-':'💥')+dmg;
+  el.style.color=isPlayer?'#ff4444':'#ffdd00';
+  el.style.left=(isPlayer?'15%':'65%');
+  el.style.top='20%';
+  stage.appendChild(el);
+  setTimeout(()=>el.remove(),950);
+  // ステージ揺れ
+  if(isPlayer){
+    stage.style.animation='none';void stage.offsetWidth;
+    stage.style.animation='stageShake .35s ease-out';
+    setTimeout(()=>stage.style.animation='',400);
+  }
+}
+
+// ============================================================
+//  起動
+// ============================================================
+makeStars();
+initG();
+showTitle();
+</script>
+</body>
+</html>
