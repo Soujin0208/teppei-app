@@ -52,6 +52,7 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;
 .save-chip.has-data{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);
   color:rgba(255,255,255,.75);}
 .save-chip .chip-lv{font-size:13px;font-weight:900;}
+.save-chip .chip-score{font-size:9px;color:var(--gold);font-weight:900;font-family:'Boogaloo',cursive;letter-spacing:.5px;}
 
 /* ゲームカード */
 .cards{display:flex;flex-direction:column;gap:14px;width:100%;max-width:380px;}
@@ -126,6 +127,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;
   animation:newBadge .8s ease-in-out infinite alternate;}
 @keyframes newBadge{from{box-shadow:0 0 6px rgba(255,50,100,.6)}
   to{box-shadow:0 0 16px rgba(255,100,0,.9)}}
+
+/* 保護者レポートリンク */
+.parent-report-link{display:inline-block;font-size:11px;color:rgba(255,215,0,.6);
+  text-decoration:none;border:1px solid rgba(255,215,0,.3);border-radius:10px;
+  padding:6px 14px;background:rgba(255,215,0,.04);font-weight:700;letter-spacing:.5px;
+  transition:all .15s;}
+.parent-report-link:hover{background:rgba(255,215,0,.1);color:rgba(255,215,0,.9);}
 
 /* フッター */
 .footer{font-size:10px;color:rgba(255,255,255,.2);font-weight:700;text-align:center;}
@@ -245,6 +253,8 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;
 
   </div>
 
+  <a href="parent-report.html" class="parent-report-link">📊 保護者向け　学習レポート</a>
+
   <div class="footer">🎮 がくしゅうバトル　全4しゅるい<br>まい日すこしずつ　つよくなろう！</div>
 
 </div>
@@ -262,22 +272,26 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;
   }
 })();
 
-// セーブデータ読み込んでレベル表示
+// セーブデータ＆ハイスコア読み込んで表示
 (()=>{
   const saves=[
-    {key:'calcBattle_v1',  elId:'saveCalc'},
-    {key:'engBattle_v1',   elId:'saveEng'},
-    {key:'kanjiBattle_v1', elId:'saveKanji'},
+    {key:'calcBattle_v5', hsId:'calc',  elId:'saveCalc'},
+    {key:'engBattle_v1',  hsId:'eng',   elId:'saveEng'},
+    {key:'kanjiBattle_v1',hsId:'kanji', elId:'saveKanji'},
   ];
-  saves.forEach(({key,elId})=>{
-    try{
-      const d=JSON.parse(localStorage.getItem(key));
-      if(d?.pLv){
-        const el=document.getElementById(elId);
-        el.classList.add('has-data');
-        el.querySelector('.chip-lv').textContent='Lv.'+d.pLv;
-      }
-    }catch{}
+  let hs={};
+  try{ hs = JSON.parse(localStorage.getItem('learnBattle_highScores_v1'))||{}; }catch{}
+  saves.forEach(({key,hsId,elId})=>{
+    const el=document.getElementById(elId);
+    let d=null;
+    try{ d=JSON.parse(localStorage.getItem(key)); }catch{}
+    const hsEntry = hs[hsId];
+    if(d?.pLv || hsEntry?.totalPlays){
+      el.classList.add('has-data');
+      const lvText = d?.pLv ? 'Lv.'+d.pLv : '-';
+      const scoreText = hsEntry?.bestScore ? `<br><span class="chip-score">🏆${hsEntry.bestScore}</span>` : '';
+      el.querySelector('.chip-lv').innerHTML = lvText + scoreText;
+    }
   });
 })();
 

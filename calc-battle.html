@@ -37,6 +37,10 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
 .save-info{background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
   border-radius:11px;padding:9px 15px;color:var(--gold);font-size:12px;font-weight:700;line-height:1.6;}
 .save-clear{font-size:10px;color:rgba(255,100,100,.5);cursor:pointer;text-decoration:underline;}
+.title-highscore{background:rgba(255,215,0,.09);border:1px solid rgba(255,215,0,.3);
+  border-radius:12px;padding:8px 14px;font-size:11px;font-weight:700;color:#fff;line-height:1.8;text-align:center;}
+.title-highscore .hs-best-score{font-family:'Boogaloo',cursive;font-size:19px;color:var(--gold);letter-spacing:1px;}
+.title-highscore .hs-sub{font-size:10px;color:rgba(255,215,0,.7);}
 
 /* ========== キャラ選択 ========== */
 #screen-select{min-height:100svh;width:100%;max-width:430px;display:flex;flex-direction:column;
@@ -213,6 +217,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
 @keyframes explainIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 .explain-box.show{display:block;}
 .explain-title{font-size:11px;color:var(--correct);font-weight:900;margin-bottom:5px;}
+.diag-box{background:rgba(255,150,50,.12);border:1px solid rgba(255,150,50,.35);
+  border-radius:10px;padding:8px 10px;margin-bottom:7px;font-size:12px;
+  color:#ffe0aa;font-weight:700;line-height:1.6;display:none;}
+.diag-box.show{display:block;animation:diagIn .3s ease-out;}
+@keyframes diagIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.diag-box .diag-user{color:#ff9977;font-weight:900;}
+.diag-box .diag-correct{color:#00ff99;font-weight:900;}
 .explain-content{font-size:13px;color:#fff;font-weight:700;line-height:1.7;white-space:pre-wrap;}
 
 /* さくらんぼ図（繰り上がり専用） */
@@ -397,6 +408,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
 .ws-item{font-size:11px;color:#fff;font-weight:700;padding:2px 0;display:flex;
   align-items:center;gap:5px;}
 .ws-pct{font-size:10px;color:rgba(255,150,100,.65);margin-left:auto;}
+.highscore-card{width:100%;max-width:285px;background:rgba(255,215,0,.08);
+  border:2px solid rgba(255,215,0,.38);border-radius:13px;padding:10px 14px;margin-top:4px;}
+.hs-title{font-size:12px;color:var(--gold);font-weight:900;text-align:center;margin-bottom:6px;letter-spacing:1px;}
+.hs-title.newrec{animation:newRecPulse .8s ease-in-out infinite alternate;}
+@keyframes newRecPulse{from{text-shadow:0 0 4px rgba(255,215,0,.5)}to{text-shadow:0 0 18px rgba(255,215,0,1),0 0 28px rgba(255,100,0,.8)}}
+.hs-row{display:flex;justify-content:space-between;font-size:11px;color:#fff;font-weight:700;line-height:1.9;}
+.hs-v{color:var(--gold);font-weight:900;font-family:'Boogaloo',cursive;font-size:13px;}
 .ach-list{width:100%;max-width:285px;}
 .ach-list-title{color:var(--purple);font-size:11px;font-weight:900;text-align:center;margin-bottom:4px;}
 .ach-badge{display:inline-block;background:rgba(160,60,255,.09);
@@ -555,6 +573,7 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
       せいかいでこうげき！コンボでひっさつわざ！🔥
     </div>
     <div class="save-info" id="saveInfo" style="display:none"></div>
+    <div class="title-highscore" id="titleHighScore" style="display:none"></div>
     <button class="btn btn-start" onclick="showSelect()">はじめる！</button>
     <div class="save-clear" id="saveClearBtn" style="display:none" onclick="clearSave()">セーブデータをけす</div>
   </div>
@@ -646,6 +665,7 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
     <!-- 解説ボックス -->
     <div class="explain-box" id="explainBox">
       <div class="explain-title" id="explainTitle">📖 かいせつ</div>
+      <div class="diag-box" id="diagBox"></div>
       <div class="explain-content" id="explainContent"></div>
       <div id="sakuraDiagram"></div>
       <div class="explain-visual" id="explainVisual" style="display:none"></div>
@@ -691,6 +711,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
       <div class="stat-row"><span>せいかい</span><span class="stat-v" id="rOk">-</span></div>
       <div class="stat-row"><span>まちがい</span><span class="stat-v" id="rNg">-</span></div>
       <div class="stat-row"><span>さいこうコンボ</span><span class="stat-v" id="rCombo">-</span></div>
+      <div class="stat-row"><span>スコア</span><span class="stat-v" id="rScore">-</span></div>
+    </div>
+    <div class="highscore-card" id="highScoreCard" style="display:none">
+      <div class="hs-title" id="hsTitle">🏆 ハイスコア</div>
+      <div class="hs-row"><span>ベスト</span><span class="hs-v" id="hsBest">-</span></div>
+      <div class="hs-row"><span>ベストコンボ</span><span class="hs-v" id="hsBestCombo">-</span></div>
+      <div class="hs-row"><span>プレイかいすう</span><span class="hs-v" id="hsPlays">-</span></div>
     </div>
     <div class="weakness-summary" id="weaknessSummary" style="display:none">
       <div class="ws-title">📈 とくい・にがて</div>
@@ -781,7 +808,68 @@ const Q_TYPES = {
 //  セーブ
 // ============================================================
 const SAVE_KEY = 'calcBattle_v5';
+const HIGHSCORE_KEY = 'learnBattle_highScores_v1';
+const PLAYLOG_KEY   = 'learnBattle_playLog_v1';
+const GAME_ID       = 'calc';
+
 function loadSave(){ try{return JSON.parse(localStorage.getItem(SAVE_KEY))||null;}catch{return null;} }
+
+/* ========== ハイスコア／プレイログ（3ゲーム共通スキーマ） ========== */
+function loadHighScores(){ try{return JSON.parse(localStorage.getItem(HIGHSCORE_KEY))||{};}catch{return {};} }
+function saveHighScore(sessionScore, maxCombo, correct, wrong, allClear){
+  const hs = loadHighScores();
+  const prev = hs[GAME_ID] || {bestScore:0, bestCombo:0, bestRate:0, totalPlays:0, totalCorrect:0, clears:0};
+  const rate = (correct+wrong)>0 ? correct/(correct+wrong) : 0;
+  const cur = {
+    bestScore:  Math.max(prev.bestScore||0,  sessionScore),
+    bestCombo:  Math.max(prev.bestCombo||0,  maxCombo),
+    bestRate:   Math.max(prev.bestRate||0,   rate),
+    totalPlays: (prev.totalPlays||0) + 1,
+    totalCorrect: (prev.totalCorrect||0) + correct,
+    clears:     (prev.clears||0) + (allClear?1:0),
+    lastPlayed: new Date().toISOString(),
+  };
+  hs[GAME_ID] = cur;
+  try{ localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(hs)); }catch{}
+  return { prev, current: cur, isNew: sessionScore > (prev.bestScore||0) };
+}
+function calcSessionScore(){
+  // 正解×10 + 最大コンボ×5 + 難易度ボーナス - 間違い×3
+  const diffBonus = G.currentEnemy?.diff ? G.currentEnemy.diff * 10 : 0;
+  return Math.max(0, G.correct*10 + G.maxCombo*5 + diffBonus - G.wrong*3);
+}
+function loadPlayLog(){ try{return JSON.parse(localStorage.getItem(PLAYLOG_KEY))||[];}catch{return [];} }
+function appendPlayLog(entry){
+  const log = loadPlayLog();
+  log.push(entry);
+  // 直近200件まで保持
+  if(log.length>200) log.splice(0, log.length-200);
+  try{ localStorage.setItem(PLAYLOG_KEY, JSON.stringify(log)); }catch{}
+}
+
+/* ========== 誤答パターン分析（けいさん用） ========== */
+function analyzeCalcError(userAnsStr, q){
+  const n = parseInt(userAnsStr, 10);
+  if(isNaN(n)) return null;
+  const {a, b, op, answer} = q;
+  const d = n - answer;
+  if(op==='+'){
+    if(n === a || n === b)          return '🍀 「＋」は　たしざん！　ふたつの かずを たした こたえだよ';
+    if(d === -10)                    return '🍒 くりあがり わすれたみたい！　10を つくってから のこりを たそう';
+    if(d === 10)                     return '🍒 くりあがりしすぎ！　たしかに 10こえるけど　ここは ぎりぎり';
+    if(Math.abs(d) === 1)            return '👀 おしい！　もう 1こだけ ちがうよ、ゆびで かぞえてみて';
+    if(n === a*b)                    return '✖️ 「＋」と「×」を まちがえたかも！　たすだけでOK';
+  }
+  if(op==='−'){
+    if(a>=b && n === b - a + 20)     return '↔️ ひきざんの じゅんばんが ぎゃく？　おおきい から ちいさい を ひくよ';
+    if(n === a + b)                   return '➕ これは「−」！　たさないで ひくよ';
+    if(d === -10)                    return '🔟 くりさがり わすれたかも！　十のくらいから 1 かりてこよう';
+    if(d === 10)                     return '🔟 くりさがりしすぎ！　ひつようなときだけ 10かりるよ';
+    if(Math.abs(d) === 1)            return '👀 おしい！　もう 1こだけ ちがうよ';
+  }
+  if(n === 0)                         return '💭 わからない ときは　ゆびや　おはじきで かぞえよう！';
+  return null;
+}
 function writeSave(){
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({
@@ -860,6 +948,18 @@ function showScr(id){
   ['title','select','game','result'].forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
   document.getElementById('screen-'+id).classList.remove('hidden');
   document.getElementById('app').scrollTop=0;
+  if(id==='title') renderTitleHighScore();
+}
+
+function renderTitleHighScore(){
+  const hs = loadHighScores()[GAME_ID];
+  const el = document.getElementById('titleHighScore');
+  if(!hs || !hs.totalPlays){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = `
+    <div class="hs-sub">🏆 ハイスコア</div>
+    <div class="hs-best-score">${hs.bestScore}点</div>
+    <div>ベストコンボ ${hs.bestCombo}　/　${hs.totalPlays}かい プレイ</div>`;
 }
 
 // ============================================================
@@ -1285,7 +1385,7 @@ function doCorrect(isAuto){
 }
 
 function showWrong(){
-  showExplanation('wrong', G.q);
+  showExplanation('wrong', G.q, G.ans);
   const penalty=G.currentEvent?.penalty||1;
   const dmg=Math.floor(15*penalty); G.currentEvent=null;
   doAttack(2,1,dmg,false,()=>{ G.pHp=Math.max(0,G.pHp-dmg); updateUI(); });
@@ -1294,10 +1394,26 @@ function showWrong(){
 // ============================================================
 //  解説ボックス（繰り上がりに特に詳しく）
 // ============================================================
-function showExplanation(reason, q){
+function showExplanation(reason, q, userAnsStr){
   const {a, b, op, answer, qType} = q;
   document.getElementById('explainTitle').textContent =
     reason==='timeout' ? '⏰ じかんきれ！かいせつ' : '❌ まちがい！かいせつ';
+
+  /* 誤答パターン診断（ユーザーが書いた数字を使って教える） */
+  const diagEl = document.getElementById('diagBox');
+  diagEl.classList.remove('show'); diagEl.innerHTML='';
+  if(reason==='wrong' && userAnsStr){
+    const diag = analyzeCalcError(userAnsStr, q);
+    if(diag){
+      diagEl.innerHTML = `
+        <div style="margin-bottom:4px;">
+          きみの こたえ：<span class="diag-user">${userAnsStr}</span>
+          ほんとう：<span class="diag-correct">${answer}</span>
+        </div>
+        <div>${diag}</div>`;
+      diagEl.classList.add('show');
+    }
+  }
 
   let content='', visual='', tip='';
   const sakuraDiagram = document.getElementById('sakuraDiagram');
@@ -1654,6 +1770,33 @@ function showResult(playerWon, isAllClear=false){
   document.getElementById('rOk').textContent=G.correct+'もん';
   document.getElementById('rNg').textContent=G.wrong+'もん';
   document.getElementById('rCombo').textContent=G.maxCombo+'コンボ';
+
+  /* ========== ハイスコア記録＆表示 ========== */
+  const sessionScore = calcSessionScore();
+  document.getElementById('rScore').textContent = sessionScore+'点';
+  const hsRec = saveHighScore(sessionScore, G.maxCombo, G.correct, G.wrong, isAllClear);
+  const hsCard = document.getElementById('highScoreCard');
+  const hsTitle = document.getElementById('hsTitle');
+  hsCard.style.display = 'block';
+  hsTitle.classList.toggle('newrec', hsRec.isNew);
+  hsTitle.textContent = hsRec.isNew ? '🎉 ハイスコア こうしん！' : '🏆 ハイスコア';
+  document.getElementById('hsBest').textContent = hsRec.current.bestScore+'点';
+  document.getElementById('hsBestCombo').textContent = hsRec.current.bestCombo+'コンボ';
+  document.getElementById('hsPlays').textContent = hsRec.current.totalPlays+'かい';
+
+  /* ========== プレイログ記録（親レポート用） ========== */
+  appendPlayLog({
+    game: GAME_ID,
+    date: new Date().toISOString(),
+    score: sessionScore,
+    correct: G.correct,
+    wrong: G.wrong,
+    maxCombo: G.maxCombo,
+    won: playerWon,
+    allClear: isAllClear,
+    stage: G.stageIdx,
+    weakStats: JSON.parse(JSON.stringify(G.weakStats)),
+  });
 
   // 弱点まとめ
   const wsEl=document.getElementById('wsItems'); wsEl.innerHTML='';

@@ -38,6 +38,17 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
 .save-info{background:rgba(255,215,0,.07);border:1px solid rgba(255,215,0,.2);
   border-radius:11px;padding:9px 15px;color:var(--gold);font-size:12px;font-weight:700;line-height:1.6;}
 .save-clear{font-size:10px;color:rgba(255,100,100,.5);cursor:pointer;text-decoration:underline;}
+.title-highscore{background:rgba(255,215,0,.09);border:1px solid rgba(255,215,0,.3);
+  border-radius:12px;padding:8px 14px;font-size:11px;font-weight:700;color:#fff;line-height:1.8;text-align:center;}
+.title-highscore .hs-best-score{font-family:'Boogaloo',cursive;font-size:19px;color:var(--gold);letter-spacing:1px;}
+.title-highscore .hs-sub{font-size:10px;color:rgba(255,215,0,.7);}
+.highscore-card{width:100%;max-width:285px;background:rgba(255,215,0,.08);
+  border:2px solid rgba(255,215,0,.38);border-radius:13px;padding:10px 14px;margin-top:4px;}
+.hs-title{font-size:12px;color:var(--gold);font-weight:900;text-align:center;margin-bottom:6px;letter-spacing:1px;}
+.hs-title.newrec{animation:newRecPulse .8s ease-in-out infinite alternate;}
+@keyframes newRecPulse{from{text-shadow:0 0 4px rgba(255,215,0,.5)}to{text-shadow:0 0 18px rgba(255,215,0,1),0 0 28px rgba(255,100,0,.8)}}
+.hs-row{display:flex;justify-content:space-between;font-size:11px;color:#fff;font-weight:700;line-height:1.9;}
+.hs-v{color:var(--gold);font-weight:900;font-family:'Boogaloo',cursive;font-size:13px;}
 
 /* ========== キャラ選択 ========== */
 #screen-select{min-height:100svh;width:100%;max-width:430px;display:flex;flex-direction:column;
@@ -235,6 +246,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
 .skill-btn:active{transform:scale(.94);}
 
 /* ========== 解説ボックス ========== */
+.diag-box{background:rgba(255,150,50,.12);border:1px solid rgba(255,150,50,.35);
+  border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:12px;
+  color:#ffe0aa;font-weight:700;line-height:1.6;display:none;}
+.diag-box.show{display:block;animation:diagIn .3s ease-out;}
+@keyframes diagIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.diag-box .diag-user{color:#ff9977;font-weight:900;}
+.diag-box .diag-correct{color:#00ff99;font-weight:900;}
 .explain-box{width:100%;
   background:linear-gradient(135deg,rgba(255,220,80,.07),rgba(170,100,255,.05));
   border:2px solid rgba(255,220,80,.28);border-radius:14px;
@@ -555,6 +573,7 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
       よめたら　こうげき！まちがえたら　かいせつ！✨
     </div>
     <div class="save-info" id="saveInfo" style="display:none"></div>
+    <div class="title-highscore" id="titleHighScore" style="display:none"></div>
     <button class="btn btn-start" onclick="showSelect()">はじめる！</button>
     <div class="save-clear" id="saveClearBtn" style="display:none" onclick="clearSave()">セーブデータをけす</div>
   </div>
@@ -657,6 +676,7 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
     <!-- 解説ボックス -->
     <div class="explain-box" id="explainBox">
       <div id="explainTitle" style="font-size:13px;font-weight:900;color:var(--gold);margin-bottom:8px;"></div>
+      <div class="diag-box" id="diagBox"></div>
       <div class="explain-result-row">
         <div class="explain-kanji-big" id="explainKanjiBig">山</div>
         <div class="explain-result-info">
@@ -695,6 +715,13 @@ html,body{background:var(--bg);font-family:'Noto Sans JP',sans-serif;height:100%
       <div class="stat-row"><span>せいかい</span><span class="stat-v" id="rOk">-</span></div>
       <div class="stat-row"><span>まちがい</span><span class="stat-v" id="rNg">-</span></div>
       <div class="stat-row"><span>さいこうコンボ</span><span class="stat-v" id="rCombo">-</span></div>
+      <div class="stat-row"><span>スコア</span><span class="stat-v" id="rScore">-</span></div>
+    </div>
+    <div class="highscore-card" id="highScoreCard" style="display:none">
+      <div class="hs-title" id="hsTitle">🏆 ハイスコア</div>
+      <div class="hs-row"><span>ベスト</span><span class="hs-v" id="hsBest">-</span></div>
+      <div class="hs-row"><span>ベストコンボ</span><span class="hs-v" id="hsBestCombo">-</span></div>
+      <div class="hs-row"><span>プレイかいすう</span><span class="hs-v" id="hsPlays">-</span></div>
     </div>
     <div class="weak-sum" id="weakSum" style="display:none">
       <div class="weak-sum-title">📈 とくい・にがて</div>
@@ -874,7 +901,56 @@ const KANJI_TIPS = [
 //  セーブ
 // ============================================================
 const SAVE_KEY = 'kanjiBattle_v1';
+const HIGHSCORE_KEY = 'learnBattle_highScores_v1';
+const PLAYLOG_KEY   = 'learnBattle_playLog_v1';
+const GAME_ID       = 'kanji';
+
 function loadSave(){ try{return JSON.parse(localStorage.getItem(SAVE_KEY))||null;}catch{return null;} }
+
+/* ========== ハイスコア／プレイログ（3ゲーム共通スキーマ） ========== */
+function loadHighScores(){ try{return JSON.parse(localStorage.getItem(HIGHSCORE_KEY))||{};}catch{return {};} }
+function saveHighScore(sessionScore, maxCombo, correct, wrong, allClear){
+  const hs = loadHighScores();
+  const prev = hs[GAME_ID] || {bestScore:0, bestCombo:0, bestRate:0, totalPlays:0, totalCorrect:0, clears:0};
+  const rate = (correct+wrong)>0 ? correct/(correct+wrong) : 0;
+  const cur = {
+    bestScore:  Math.max(prev.bestScore||0,  sessionScore),
+    bestCombo:  Math.max(prev.bestCombo||0,  maxCombo),
+    bestRate:   Math.max(prev.bestRate||0,   rate),
+    totalPlays: (prev.totalPlays||0) + 1,
+    totalCorrect: (prev.totalCorrect||0) + correct,
+    clears:     (prev.clears||0) + (allClear?1:0),
+    lastPlayed: new Date().toISOString(),
+  };
+  hs[GAME_ID] = cur;
+  try{ localStorage.setItem(HIGHSCORE_KEY, JSON.stringify(hs)); }catch{}
+  return { prev, current: cur, isNew: sessionScore > (prev.bestScore||0) };
+}
+function calcSessionScore(){
+  return Math.max(0, G.correct*10 + G.maxCombo*5 - G.wrong*3);
+}
+function loadPlayLog(){ try{return JSON.parse(localStorage.getItem(PLAYLOG_KEY))||[];}catch{return [];} }
+function appendPlayLog(entry){
+  const log = loadPlayLog();
+  log.push(entry);
+  if(log.length>200) log.splice(0, log.length-200);
+  try{ localStorage.setItem(PLAYLOG_KEY, JSON.stringify(log)); }catch{}
+}
+
+/* ========== 誤答パターン分析（かんじ用） ========== */
+function analyzeKanjiError(pickedReading, correctReading, kd){
+  if(!pickedReading || !correctReading) return null;
+  if(pickedReading[0] === correctReading[0]){
+    return `🎵 はじめの おと が にてるね！「${pickedReading}」と「${correctReading}」。よくみよう`;
+  }
+  if(pickedReading.length === correctReading.length){
+    return `🔤 おなじ もじかずの よみ だった！ほかの かんじと まちがえたかも`;
+  }
+  if(kd && kd.alt && pickedReading.includes(kd.alt)){
+    return `💡 「${kd.k}」は「${kd.r}」とも「${kd.alt}」とも よむよ！`;
+  }
+  return '📖 よく にた よみかたの かんじが おおい！こえに だして おぼえよう';
+}
 function writeSave(){
   try{
     localStorage.setItem(SAVE_KEY, JSON.stringify({
@@ -954,6 +1030,19 @@ function showScr(id){
   ['title','select','game','result'].forEach(s=>document.getElementById('screen-'+s).classList.add('hidden'));
   document.getElementById('screen-'+id).classList.remove('hidden');
   document.getElementById('app').scrollTop=0;
+  if(id==='title') renderTitleHighScore();
+}
+
+function renderTitleHighScore(){
+  const hs = loadHighScores()[GAME_ID];
+  const el = document.getElementById('titleHighScore');
+  if(!el) return;
+  if(!hs || !hs.totalPlays){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = `
+    <div class="hs-sub">🏆 ハイスコア</div>
+    <div class="hs-best-score">${hs.bestScore}点</div>
+    <div>ベストコンボ ${hs.bestCombo}　/　${hs.totalPlays}かい プレイ</div>`;
 }
 
 // ============================================================
@@ -1278,6 +1367,7 @@ function choose(idx){
     if(G.nobreakCount>0){G.nobreakCount--;}else{G.combo=0;} G.wrong++;
     showFB('まちがい💥','#ff3333');
     highlightAnswer();
+    G._lastPickedReading = G.q.choices[idx];  // 誤答診断用に記憶
     showWrong();
   }
 }
@@ -1347,6 +1437,25 @@ function showExplanation(reason, kd){
     reason==='correct'  ? '⭕ せいかい！かんじのかいせつ' :
     reason==='timeout'  ? '⏰ じかんきれ！かいせつ' :
                           '❌ まちがい！かいせつ';
+
+  /* 誤答診断 */
+  const diagEl = document.getElementById('diagBox');
+  if(diagEl){
+    diagEl.classList.remove('show'); diagEl.innerHTML='';
+    if(reason==='wrong' && G._lastPickedReading){
+      const msg = analyzeKanjiError(G._lastPickedReading, kd.r, kd);
+      if(msg){
+        diagEl.innerHTML = `
+          <div style="margin-bottom:4px;">
+            きみの えらび：<span class="diag-user">${G._lastPickedReading}</span>
+            ほんとう：<span class="diag-correct">${kd.r}</span>
+          </div>
+          <div>${msg}</div>`;
+        diagEl.classList.add('show');
+      }
+      G._lastPickedReading = null;
+    }
+  }
 
   document.getElementById('explainKanjiBig').textContent = kd.k;
   document.getElementById('explainAnswer').textContent   = `よみかた：${kd.r}`;
@@ -1601,6 +1710,34 @@ function showResult(playerWon, isAllClear=false){
   document.getElementById('rOk').textContent=G.correct+'もん';
   document.getElementById('rNg').textContent=G.wrong+'もん';
   document.getElementById('rCombo').textContent=G.maxCombo+'コンボ';
+
+  /* ========== ハイスコア記録＆表示 ========== */
+  const sessionScore = calcSessionScore();
+  const scoreEl = document.getElementById('rScore');
+  if(scoreEl) scoreEl.textContent = sessionScore+'点';
+  const hsRec = saveHighScore(sessionScore, G.maxCombo, G.correct, G.wrong, isAllClear);
+  const hsCard = document.getElementById('highScoreCard');
+  const hsTitleEl = document.getElementById('hsTitle');
+  if(hsCard){
+    hsCard.style.display='block';
+    hsTitleEl.classList.toggle('newrec', hsRec.isNew);
+    hsTitleEl.textContent = hsRec.isNew ? '🎉 ハイスコア こうしん！' : '🏆 ハイスコア';
+    document.getElementById('hsBest').textContent = hsRec.current.bestScore+'点';
+    document.getElementById('hsBestCombo').textContent = hsRec.current.bestCombo+'コンボ';
+    document.getElementById('hsPlays').textContent = hsRec.current.totalPlays+'かい';
+  }
+
+  /* ========== プレイログ記録（親レポート用） ========== */
+  appendPlayLog({
+    game: GAME_ID,
+    date: new Date().toISOString(),
+    score: sessionScore,
+    correct: G.correct, wrong: G.wrong,
+    maxCombo: G.maxCombo,
+    won: playerWon, allClear: isAllClear,
+    stage: G.stageIdx,
+    weakKanji: JSON.parse(JSON.stringify(G.weakKanji)),
+  });
 
   // 弱点かんじまとめ（間違えた漢字を表示）
   const wsEl=document.getElementById('wsItems'); wsEl.innerHTML='';

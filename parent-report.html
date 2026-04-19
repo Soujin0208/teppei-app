@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>学習レポート（保護者向け）</title>
+<link href="https://fonts.googleapis.com/css2?family=Boogaloo&family=Noto+Sans+JP:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e16; --fg:#e8edf5; --muted:#8a94a8;
+  --calc:#ff8844; --eng:#44ffaa; --kanji:#88ddff;
+  --good:#00ff99; --warn:#ffb84d; --bad:#ff5555;
+  --gold:#ffd700; --line:rgba(255,255,255,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{background:var(--bg);color:var(--fg);
+  font-family:'Noto Sans JP',sans-serif;line-height:1.6;min-height:100%;}
+body{padding:20px 16px 48px;max-width:680px;margin:0 auto;}
+
+.header{border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:18px;}
+.header h1{font-size:22px;font-weight:900;letter-spacing:.5px;}
+.header .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.back-link{display:inline-block;font-size:12px;color:var(--muted);
+  text-decoration:none;margin-bottom:10px;}
+.back-link:hover{color:var(--fg);}
+
+.section{margin-bottom:26px;}
+.section-title{font-size:14px;font-weight:900;margin-bottom:10px;letter-spacing:.5px;
+  color:#fff;display:flex;align-items:center;gap:8px;}
+.section-title .hint{font-size:10px;color:var(--muted);font-weight:500;margin-left:auto;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;}
+.kpi{background:rgba(255,255,255,.04);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;}
+.kpi .k{font-size:11px;color:var(--muted);font-weight:700;}
+.kpi .v{font-family:'Boogaloo',cursive;font-size:26px;color:var(--gold);
+  letter-spacing:1px;line-height:1.2;margin-top:4px;}
+.kpi .u{font-size:11px;color:var(--muted);font-weight:500;}
+
+.game-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:560px){.game-grid{grid-template-columns:1fr 1fr 1fr;}}
+.game-card{background:rgba(255,255,255,.03);border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px;}
+.game-card.calc{border-color:rgba(255,136,68,.35);}
+.game-card.eng{border-color:rgba(68,255,170,.35);}
+.game-card.kanji{border-color:rgba(136,221,255,.35);}
+.game-card .gc-title{font-size:13px;font-weight:900;}
+.game-card .gc-icon{font-size:24px;margin-right:6px;vertical-align:middle;}
+.game-card .gc-score{font-family:'Boogaloo',cursive;font-size:30px;
+  color:var(--gold);margin-top:6px;}
+.game-card .gc-row{display:flex;justify-content:space-between;
+  font-size:12px;color:var(--muted);padding:2px 0;}
+.game-card .gc-row b{color:var(--fg);font-weight:700;}
+
+.empty{background:rgba(255,255,255,.03);border:1px dashed var(--line);
+  border-radius:12px;padding:24px;text-align:center;color:var(--muted);font-size:13px;}
+
+.bar-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:12px;}
+.bar-row .label{flex:0 0 auto;min-width:90px;}
+.bar-row .bar{flex:1;height:8px;background:rgba(255,255,255,.05);
+  border-radius:5px;overflow:hidden;}
+.bar-row .bar-fill{height:100%;border-radius:5px;
+  transition:width .4s ease;}
+.bar-fill.good{background:linear-gradient(90deg,#00dd77,#00ff99);}
+.bar-fill.warn{background:linear-gradient(90deg,#ffaa33,#ffdd88);}
+.bar-fill.bad {background:linear-gradient(90deg,#ff3333,#ff8844);}
+.bar-row .pct{flex:0 0 54px;text-align:right;color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums;}
+.bar-row .count{flex:0 0 auto;color:var(--muted);font-size:10px;}
+
+.calendar{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;}
+.cal-day{aspect-ratio:1;border-radius:4px;background:rgba(255,255,255,.04);
+  display:flex;align-items:end;justify-content:center;font-size:8px;
+  color:var(--muted);padding:2px;position:relative;}
+.cal-day.has-play{background:rgba(68,255,170,.3);color:#052;font-weight:900;}
+.cal-day.has-play-mid{background:rgba(68,255,170,.55);color:#031;font-weight:900;}
+.cal-day.has-play-hi{background:linear-gradient(135deg,#00ff99,#ffdd44);color:#000;font-weight:900;}
+.cal-day.today{outline:2px solid var(--gold);}
+
+.rec-list{background:rgba(255,255,255,.04);border-radius:12px;padding:12px 14px;border:1px solid var(--line);}
+.rec-item{font-size:13px;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.06);}
+.rec-item:last-child{border-bottom:none;}
+.rec-item .rec-label{color:var(--muted);margin-right:6px;}
+.rec-empty{font-size:12px;color:var(--muted);}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}
+.btn{background:rgba(255,255,255,.06);color:var(--fg);border:1px solid var(--line);
+  border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;
+  cursor:pointer;text-decoration:none;display:inline-block;}
+.btn:hover{background:rgba(255,255,255,.12);}
+.btn.danger{border-color:rgba(255,80,80,.4);color:#ff9999;}
+.btn.primary{background:linear-gradient(135deg,#ffd700,#ff8844);color:#100;
+  border:none;font-weight:900;}
+
+footer{text-align:center;font-size:10px;color:var(--muted);margin-top:32px;padding-top:14px;border-top:1px solid var(--line);}
+
+@media (max-width:410px){
+  body{padding:14px 10px 40px;}
+  .header h1{font-size:18px;}
+  .kpi .v{font-size:22px;}
+  .game-card .gc-score{font-size:24px;}
+}
+</style>
+</head>
+<body>
+
+<a href="gakushuu-portal.html" class="back-link">← ポータルにもどる</a>
+
+<div class="header">
+  <h1>📊 学習レポート</h1>
+  <div class="sub">こばやしけ・がくしゅうバトル｜ <span id="asOf"></span> 時点</div>
+</div>
+
+<!-- 全体サマリー -->
+<div class="section">
+  <div class="section-title">🌐 全体サマリー</div>
+  <div class="kpi-grid" id="overviewGrid"></div>
+</div>
+
+<!-- ゲーム別ハイスコア -->
+<div class="section">
+  <div class="section-title">🏆 ゲーム別ハイスコア</div>
+  <div class="game-grid" id="gameGrid"></div>
+</div>
+
+<!-- 14日カレンダー -->
+<div class="section">
+  <div class="section-title">📅 ちょうきんのプレイ（14日）<span class="hint">濃い＝たくさん遊んだ日</span></div>
+  <div class="calendar" id="calendar"></div>
+</div>
+
+<!-- カテゴリ別マスタリー -->
+<div class="section">
+  <div class="section-title">📈 分野別マスタリー <span class="hint">正解率</span></div>
+  <div id="masteryContainer"></div>
+</div>
+
+<!-- 弱点・おすすめ -->
+<div class="section">
+  <div class="section-title">💡 このくらいの 声かけが おすすめ</div>
+  <div class="rec-list" id="recList"></div>
+</div>
+
+<div class="actions">
+  <a href="gakushuu-portal.html" class="btn primary">🎮 ポータルへ</a>
+  <button class="btn" onclick="location.reload()">🔄 さいしんの じょうほうに</button>
+  <button class="btn danger" onclick="confirmReset()">🗑️ プレイログだけ リセット</button>
+</div>
+
+<footer>
+  このページはローカル（ブラウザ内）のデータだけで動きます。<br>
+  インターネットには何も送信されません。
+</footer>
+
+<script>
+/* ========== データ読み込み ========== */
+const HIGHSCORE_KEY = 'learnBattle_highScores_v1';
+const PLAYLOG_KEY   = 'learnBattle_playLog_v1';
+
+function loadHs(){ try{return JSON.parse(localStorage.getItem(HIGHSCORE_KEY))||{};}catch{return {};} }
+function loadLog(){ try{return JSON.parse(localStorage.getItem(PLAYLOG_KEY))||[];}catch{return [];} }
+function loadCalcSave(){ try{return JSON.parse(localStorage.getItem('calcBattle_v5'))||{};}catch{return {};} }
+function loadKanjiSave(){ try{return JSON.parse(localStorage.getItem('kanjiBattle_v1'))||{};}catch{return {};} }
+function loadEngSave(){ try{return JSON.parse(localStorage.getItem('engBattle_v1'))||{};}catch{return {};} }
+
+const GAMES = [
+  {id:'calc',  name:'けいさんバトル', icon:'🔢', color:'calc',  saveLoader:loadCalcSave},
+  {id:'eng',   name:'えいごバトル',   icon:'🌍', color:'eng',   saveLoader:loadEngSave},
+  {id:'kanji', name:'かんじバトル',   icon:'📖', color:'kanji', saveLoader:loadKanjiSave},
+];
+
+/* ========== KPI / ゲームカード描画 ========== */
+function render(){
+  const now = new Date();
+  document.getElementById('asOf').textContent = `${now.getFullYear()}/${(now.getMonth()+1)}/${now.getDate()} ${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const hs = loadHs();
+  const log = loadLog();
+
+  // 全体サマリー
+  let totalPlays=0, totalCorrect=0, totalWrong=0, totalClears=0;
+  GAMES.forEach(g=>{
+    const s = hs[g.id] || {};
+    totalPlays   += s.totalPlays||0;
+    totalCorrect += s.totalCorrect||0;
+    totalClears  += s.clears||0;
+  });
+  log.forEach(e=>{ totalWrong += e.wrong||0; });
+  const rate = (totalCorrect+totalWrong)>0 ? Math.round(totalCorrect/(totalCorrect+totalWrong)*100) : 0;
+
+  const ov = document.getElementById('overviewGrid');
+  ov.innerHTML = `
+    <div class="kpi"><div class="k">🎮 プレイ回数</div><div class="v">${totalPlays}</div><div class="u">セッション</div></div>
+    <div class="kpi"><div class="k">✅ 正解数</div><div class="v">${totalCorrect}</div><div class="u">問</div></div>
+    <div class="kpi"><div class="k">🎯 正解率</div><div class="v">${rate}<span style="font-size:16px;">%</span></div><div class="u">累計</div></div>
+    <div class="kpi"><div class="k">👑 全クリア</div><div class="v">${totalClears}</div><div class="u">回</div></div>
+  `;
+
+  // ゲーム別
+  const gg = document.getElementById('gameGrid');
+  gg.innerHTML = '';
+  GAMES.forEach(g=>{
+    const s = hs[g.id];
+    const played = s && s.totalPlays>0;
+    const lastDate = played && s.lastPlayed ? new Date(s.lastPlayed) : null;
+    const lastStr = lastDate ? `${lastDate.getMonth()+1}/${lastDate.getDate()}` : '-';
+    gg.innerHTML += `
+      <div class="game-card ${g.color}">
+        <div class="gc-title"><span class="gc-icon">${g.icon}</span>${g.name}</div>
+        ${played ? `
+          <div class="gc-score">${s.bestScore||0}点</div>
+          <div class="gc-row"><span>ベストコンボ</span><b>${s.bestCombo||0}</b></div>
+          <div class="gc-row"><span>プレイ回数</span><b>${s.totalPlays}回</b></div>
+          <div class="gc-row"><span>全クリア</span><b>${s.clears||0}回</b></div>
+          <div class="gc-row"><span>最終プレイ</span><b>${lastStr}</b></div>
+        ` : `
+          <div class="gc-score" style="font-size:14px;color:var(--muted);">まだプレイなし</div>
+        `}
+      </div>`;
+  });
+
+  renderCalendar(log);
+  renderMastery();
+  renderRecommendations(hs, log);
+}
+
+/* ========== 14日カレンダー ========== */
+function renderCalendar(log){
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const countByDay = {};
+  log.forEach(e=>{
+    const d = new Date(e.date); d.setHours(0,0,0,0);
+    const key = d.toISOString().slice(0,10);
+    countByDay[key] = (countByDay[key]||0) + 1;
+  });
+  for(let i=13;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    const cnt = countByDay[key]||0;
+    const cls = cnt>=4 ? 'has-play-hi' : cnt>=2 ? 'has-play-mid' : cnt>=1 ? 'has-play' : '';
+    const isToday = i===0 ? 'today' : '';
+    cal.innerHTML += `<div class="cal-day ${cls} ${isToday}" title="${key} : ${cnt}回">${d.getDate()}</div>`;
+  }
+}
+
+/* ========== 分野別マスタリー ========== */
+function renderMastery(){
+  const container = document.getElementById('masteryContainer');
+  container.innerHTML = '';
+
+  // けいさん：weakStats（add1/sub1/addCarry/subBorrow/add2/sub2）
+  const calcSv = loadCalcSave();
+  const CALC_LABELS = {
+    add1:'1けた たし算', sub1:'1けた ひき算',
+    addCarry:'くりあがり たし算', subBorrow:'くりさがり ひき算',
+    add2:'2けた たし算', sub2:'2けた ひき算',
+  };
+  if(calcSv.weakStats){
+    const calcBar = renderBars('🔢 けいさん', calcSv.weakStats, CALC_LABELS);
+    if(calcBar) container.innerHTML += calcBar;
+  }
+
+  // かんじ：weakKanji（漢字単位）→カテゴリ化は難しいので、よく間違えたトップ6だけ出す
+  const kanjiSv = loadKanjiSave();
+  if(kanjiSv.weakKanji){
+    const items = Object.entries(kanjiSv.weakKanji).filter(([,s])=>s.ok+s.ng>=2);
+    if(items.length){
+      const sorted = items.sort(([,a],[,b])=>{
+        const rA = a.ng/(a.ok+a.ng), rB = b.ng/(b.ok+b.ng);
+        return rB-rA;
+      }).slice(0,8);
+      const pseudo = {};
+      sorted.forEach(([k,s])=>{ pseudo[k] = s; });
+      const labels = {};
+      sorted.forEach(([k])=>{ labels[k] = `漢字「${k}」`; });
+      container.innerHTML += renderBars('📖 かんじ（にがて 上位8）', pseudo, labels, '個');
+    }
+  }
+
+  // えいご：weakWords
+  const engSv = loadEngSave();
+  if(engSv.weakWords){
+    const items = Object.entries(engSv.weakWords).filter(([,s])=>s.ok+s.ng>=2);
+    if(items.length){
+      const sorted = items.sort(([,a],[,b])=>{
+        const rA = a.ng/(a.ok+a.ng), rB = b.ng/(b.ok+b.ng);
+        return rB-rA;
+      }).slice(0,8);
+      const pseudo = {};
+      const labels = {};
+      sorted.forEach(([k,s])=>{ pseudo[k] = s; labels[k] = `"${k}"`; });
+      container.innerHTML += renderBars('🌍 えいご（にがて 上位8）', pseudo, labels, '回');
+    }
+  }
+
+  if(!container.innerHTML){
+    container.innerHTML = '<div class="empty">まだデータが足りません。何問か解くとここに表示されます。</div>';
+  }
+}
+
+function renderBars(title, stats, labels, unit='問'){
+  let body = '';
+  let hasAny = false;
+  Object.entries(stats).forEach(([k,s])=>{
+    const total = (s.ok||0)+(s.ng||0);
+    if(total<1) return;
+    hasAny = true;
+    const pct = Math.round((s.ok||0)/total*100);
+    const cls = pct>=75 ? 'good' : pct>=50 ? 'warn' : 'bad';
+    const label = labels[k] || k;
+    body += `
+      <div class="bar-row">
+        <div class="label">${label}</div>
+        <div class="bar"><div class="bar-fill ${cls}" style="width:${pct}%"></div></div>
+        <div class="pct">${pct}%</div>
+        <div class="count">${s.ok||0}/${total}${unit}</div>
+      </div>`;
+  });
+  if(!hasAny) return '';
+  return `
+    <div style="background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;">
+      <div style="font-size:12px;font-weight:900;margin-bottom:6px;">${title}</div>
+      ${body}
+    </div>`;
+}
+
+/* ========== 声かけレコメンド ========== */
+function renderRecommendations(hs, log){
+  const rec = document.getElementById('recList');
+  const items = [];
+
+  // 直近のプレイ有無
+  if(log.length===0){
+    items.push('🌱 まだプレイ記録がありません。まずは一緒に1ゲームやってみましょう。');
+  } else {
+    const last = new Date(log[log.length-1].date);
+    const daysAgo = Math.floor((Date.now()-last.getTime())/86400000);
+    if(daysAgo>=2) items.push(`📅 最後のプレイは ${daysAgo} 日前。「今日1回だけやろう」と声をかけてみては？`);
+  }
+
+  // 勝てない日が続く → レベル下げの提案
+  const recent = log.slice(-10);
+  if(recent.length>=5){
+    const winRate = recent.filter(e=>e.won).length / recent.length;
+    if(winRate<0.35) items.push('😥 最近の勝率が低め。「キャラクター変えてみる？」と声をかけると気分転換に。');
+    if(winRate>0.9)  items.push('🚀 好調！難しいステージにも誘ってみて OK。');
+  }
+
+  // 弱点カテゴリを掘り起こす
+  const calcSv = loadCalcSave();
+  if(calcSv.weakStats){
+    const CALC_LABELS = {
+      add1:'1けた たし算', sub1:'1けた ひき算',
+      addCarry:'くりあがり', subBorrow:'くりさがり',
+      add2:'2けた たし算', sub2:'2けた ひき算',
+    };
+    let worst=null, wr=0;
+    Object.entries(calcSv.weakStats).forEach(([k,s])=>{
+      const t=s.ok+s.ng; if(t<3) return;
+      const rate=s.ng/t;
+      if(rate>wr){wr=rate;worst=k;}
+    });
+    if(worst && wr>=0.4) items.push(`🔢 けいさんで「${CALC_LABELS[worst]}」がにがて気味。日常で「${CALC_LABELS[worst]}」のクイズを出してみて。`);
+  }
+
+  // 連続プレイ日数 の reco
+  const daysPlayed = new Set();
+  log.forEach(e=>{ daysPlayed.add(e.date.slice(0,10)); });
+  if(daysPlayed.size>=5) items.push('🔥 よく続けてる！「よく頑張ってるね」と具体的にほめてあげると継続力UP。');
+
+  if(items.length===0){
+    rec.innerHTML = '<div class="rec-empty">特別なコメントはありません。調子が良いようです 👍</div>';
+    return;
+  }
+  rec.innerHTML = items.map(t=>`<div class="rec-item">${t}</div>`).join('');
+}
+
+/* ========== リセット ========== */
+function confirmReset(){
+  if(!confirm('プレイログをリセットしますか？（ハイスコア・各ゲームのセーブデータはそのまま残ります）'))return;
+  localStorage.removeItem(PLAYLOG_KEY);
+  location.reload();
+}
+
+render();
+</script>
+</body>
+</html>
